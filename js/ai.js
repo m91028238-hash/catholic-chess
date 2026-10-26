@@ -1,5 +1,5 @@
 // Engine manager: Stockfish.js (lite, single-threaded WASM) + small alpha-beta worker.
-const V='1';
+const V='2';
 let sf=null,sfReady=null,sfFailed=false,mini=null,reqId=0,pending=null;
 function startSF(){
   if(sfReady)return sfReady;

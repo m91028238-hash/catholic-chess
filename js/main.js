@@ -1,7 +1,7 @@
-import { Chess } from '../vendor/chess.js?v=1';
-import { ChessScene } from './scene.js?v=1';
-import * as AI from './ai.js?v=1';
-import { play, setSound, unlockAudio } from './sound.js?v=1';
+import { Chess } from '../vendor/chess.js?v=2';
+import { ChessScene } from './scene.js?v=2';
+import * as AI from './ai.js?v=2';
+import { play, setSound, unlockAudio } from './sound.js?v=2';
 
 const $=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
@@ -103,7 +103,6 @@ function startGame(){
   hidePanels();
   scene.clearPieces();scene.sync(game.board(),false);
   scene.setView(current.mode==='2p'?'w':human,false);
-  scene.introSweep();
   if(isAI()){AI.preload(aiCfg());AI.newGame()}
   setObjective();renderHistory();refreshMarkers();renderClocks();setStatus();updateButtons();
   closeMenu();
@@ -234,7 +233,8 @@ $('bDraw').onclick=()=>{
 $('offerYes').onclick=()=>{$('offer').hidden=true;endGame('draw','Draw agreed','Both players agreed to a draw')};
 $('offerNo').onclick=()=>{$('offer').hidden=true;drawOffer=null;toast('Draw declined')};
 $('bRotate').onclick=()=>{S.rotate=!S.rotate;saveS();updateButtons();if(S.rotate&&!over)scene.setView(game.turn());renderClocks()};
-$('bView').onclick=()=>{scene.setView(current&&current.mode==='2p'?(S.rotate?game.turn():scene.view.side):human)};
+const CAMS=['Player','Top','Side'];$('bView').textContent='Camera: '+scene.camMode;
+$('bView').onclick=()=>{scene.camMode=CAMS[(CAMS.indexOf(scene.camMode)+1)%3];localStorage.setItem('camMode',scene.camMode);$('bView').textContent='Camera: '+scene.camMode;scene.setView(current&&current.mode==='2p'?(S.rotate?game.turn():scene.view.side):human)};
 $('bSound').onclick=()=>{S.sound=!S.sound;setSound(S.sound);saveS();updateButtons();unlockAudio();play('select')};
 $('menuBtn').onclick=()=>openMenu();
 

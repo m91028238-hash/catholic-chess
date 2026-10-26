@@ -1,5 +1,5 @@
 // Small alpha-beta engine for the gentlest levels (runs in a Web Worker).
-import { Chess } from '../vendor/chess.js?v=1';
+import { Chess } from '../vendor/chess.js?v=2';
 const V={p:100,n:310,b:325,r:500,q:900,k:0};
 // piece-square tables from white's view, a8..h1 order (index = rank8 first)
 const PST={

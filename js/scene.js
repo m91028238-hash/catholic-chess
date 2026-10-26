@@ -1,8 +1,8 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=1';
-import { pieceGeometries } from './pieces.js?v=1';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=2';
+import { pieceGeometries } from './pieces.js?v=2';
 
 const TOP=0.32;
 const FILES='abcdefgh';
@@ -25,7 +25,7 @@ export class ChessScene{
     this.camera=new THREE.PerspectiveCamera(36,1,0.1,200);
     const ctl=this.controls=new OrbitControls(this.camera,r.domElement);
     ctl.enableDamping=true;ctl.dampingFactor=.12;ctl.enablePan=false;ctl.minDistance=5;ctl.maxDistance=42;
-    ctl.maxPolarAngle=Math.PI*0.46;ctl.minPolarAngle=0.05;ctl.target.set(0,0.3,0);ctl.rotateSpeed=.7;
+    ctl.enableRotate=false;ctl.maxPolarAngle=1.4;ctl.minPolarAngle=0;this.camMode=localStorage.getItem('camMode')||'Player';ctl.target.set(0,0.3,0);ctl.rotateSpeed=.7;
     ctl.addEventListener('start',()=>{this.userOrbit=true;this.camTween=null});
     // lights
     sc.add(new THREE.HemisphereLight(0xffeedd,0x2a1a10,0.55));
@@ -170,31 +170,27 @@ export class ChessScene{
   // ---------- camera ----------
   _fit(){
     const a=this.camera.aspect;const vf=THREE.MathUtils.degToRad(this.camera.fov);const hf=2*Math.atan(Math.tan(vf/2)*a);
-    const portrait=a<1;
-    const polar=portrait?0.6:0.72; // radians from vertical
-    const wfit=portrait?9.3:19.2;
-    const dW=(wfit/2)/Math.tan(hf/2)+ (portrait?1.2:0.5);
-    const hfit=11*Math.cos(polar)+1.6*Math.sin(polar);
-    const dH=(hfit/2)/Math.tan(vf/2)+1.5;
+    const portrait=a<1;const m=this.camMode;
+    const polar=m==='Top'?0.001:m==='Side'?1.15:0.87;
+    const wfit=m==='Top'?(portrait?8.6:12):m==='Side'?(portrait?11.5:19.2):(portrait?9.3:19.2);
+    const dW=(wfit/2)/Math.tan(hf/2)+(m==='Top'?0:portrait?1.2:0.5);
+    const hfit=m==='Top'?(portrait?0:11):11*Math.cos(polar)+1.6*Math.sin(polar);
+    const dH=(hfit/2)/Math.tan(vf/2)+(m==='Top'?0:1.5);
     return {r:Math.max(dW,dH),polar};
   }
+  setCamMode(m){this.camMode=m;localStorage.setItem('camMode',m);this.setView(this.view.side)}
   setView(side,animate=true){
     this.view.side=side;
     const {r,polar}=this._fit();
-    const theta=side==='w'?0:Math.PI;
+    const theta=(side==='w'?0:Math.PI)+(this.camMode==='Side'?Math.PI/2:0);
     const target={r,phi:polar,theta};
     this.userOrbit=false;
     if(!animate||this.fast){this._applySph(target);return}
     const cur=new THREE.Spherical().setFromVector3(this.camera.position.clone().sub(this.controls.target));
     let dt=theta-cur.theta;while(dt>Math.PI)dt-=2*Math.PI;while(dt<-Math.PI)dt+=2*Math.PI;
-    this.camTween={from:{r:cur.radius,phi:cur.phi,theta:cur.theta},to:{r,phi:polar,theta:cur.theta+dt},t0:performance.now(),dur:900};
+    this.camTween={from:{r:cur.radius,phi:cur.phi,theta:cur.theta},to:{r,phi:polar,theta:cur.theta+dt},t0:performance.now(),dur:400};
   }
-  introSweep(){ // brief wide shot showing the whole board with its side panels, then settle
-    if(this.fast)return;
-    const {r,polar}=this._fit();const side=this.view.side;const th=side==='w'?0:Math.PI;
-    this._applySph({r:Math.max(r,24),phi:0.75,theta:th+0.5});
-    this.camTween={from:{r:Math.max(r,24),phi:0.75,theta:th+0.5},to:{r,phi:polar,theta:th},t0:performance.now()+500,dur:2200};
-  }
+  introSweep(){}
   _applySph(s){const v=new THREE.Vector3().setFromSphericalCoords(s.r,s.phi,s.theta);this.camera.position.copy(this.controls.target).add(v);this.camera.lookAt(this.controls.target);this.controls.update()}
   resize(){const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);this.renderer.domElement.style.width=w+'px';this.renderer.domElement.style.height=h+'px';this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(!this.userOrbit&&!this.camTween&&this.view)this.setView(this.view.side,false)}
   // ---------- input ----------
