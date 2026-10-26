@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#2a1a10">
+<meta name="description" content="3D chess on an engraved wooden board with crosses and saints. Play the computer, a friend, or climb the campaign ladder.">
+<title>Catholic Chess</title>
+<link rel="stylesheet" href="css/style.css?v=1">
+<script type="importmap">{"imports":{"three":"./vendor/three.bundle.min.js?v=1"}}</script>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="15ec783e-8882-42d9-b43b-fefd064bbe24"></script>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <button id="menuBtn" aria-label="Menu">☰</button>
+    <div class="tx"><div id="obj">Catholic Chess</div><div id="status">Loading…</div></div>
+  </header>
+  <div class="clk cb" id="clkTop"></div>
+  <main id="stage"></main>
+  <div class="clk cw" id="clkBot"></div>
+  <section id="bottom">
+    <div id="result" class="panel" hidden><div id="rTitle"></div><div id="rDetail"></div><div id="rBtns" class="row"></div></div>
+    <div id="promo" class="panel" hidden><div>Promote to:</div><div id="promoBtns" class="row promo"></div></div>
+    <div id="offer" class="panel" hidden><div id="offerTxt"></div><div class="row"><button id="offerYes">Accept</button><button id="offerNo" class="ghost">Decline</button></div></div>
+    <div id="hist" aria-label="Move history"></div>
+    <div class="ctrls">
+      <button id="bUndo">Undo</button>
+      <button id="bDraw">Offer draw</button>
+      <button id="bResign">Resign</button>
+      <button id="bRotate">Rotate: On</button>
+      <button id="bView">Reset view</button>
+      <button id="bSound">Sound: On</button>
+    </div>
+  </section>
+  <div id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<div id="menu">
+  <div class="mwrap">
+    <a class="home" href="https://m91028238-hash.github.io/catholic-mini-games/">‹ Catholic Games</a>
+    <h1>Catholic Chess</h1>
+    <p class="sub">An engraved wooden board, boxwood and rosewood pieces.</p>
+    <div class="sec"><h3>Mode</h3><div id="mMode" class="chips"></div></div>
+    <div class="sec" id="secDiff"><h3>Difficulty</h3><div id="mDiff" class="chips"></div></div>
+    <div class="sec" id="secCamp"><h3>Campaign ladder</h3><div id="mCamp" class="ladder"></div></div>
+    <div class="sec" id="secColor"><h3>Play as</h3><div id="mColor" class="chips"></div></div>
+    <div class="sec" id="secRot"><h3>Turn the board to the side to move</h3><div id="mRot" class="chips"></div></div>
+    <div class="sec"><h3>Clock (each side)</h3><div id="mClock" class="chips"></div></div>
+    <div class="row big"><button id="mStart">Start game</button><button id="mResume" class="ghost" hidden>Resume</button></div>
+    <details class="credits"><summary>How to play</summary>
+      <p>Tap a piece to see its legal moves, then tap a dot to move. Drag with one finger to orbit the board, pinch to zoom; “Reset view” brings the camera back. Win a campaign game to unlock the next opponent; you can replay any unlocked level.</p>
+    </details>
+    <details class="credits" id="credits"><summary>Credits &amp; licences</summary>
+      <ul>
+        <li><b>three.js</b> r186 — MIT licence, © three.js authors.</li>
+        <li><b>chess.js</b> 1.4.0 — BSD 2-Clause, © Jeff Hlywa. Rules, check, mate, draws.</li>
+        <li><b>Board, pieces, wood textures and sounds</b> — made procedurally for this game (lathe-turned Staunton pieces, sculpted knight, synthesised wood clicks).</li>
+        <li><b>Side panels</b> (Christ: Chi-Rho, IHS; St Benedict medal) — procedural engraving made for this game, inspired by a real laser-engraved board.</li>
+        <li>This game’s own code is released under GPLv3. See ASSETS.md in the repository.</li>
+      </ul>
+    </details>
+  </div>
+</div>
+<script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>
