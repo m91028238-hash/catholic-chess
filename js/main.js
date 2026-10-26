@@ -233,8 +233,8 @@ $('bDraw').onclick=()=>{
 $('offerYes').onclick=()=>{$('offer').hidden=true;endGame('draw','Draw agreed','Both players agreed to a draw')};
 $('offerNo').onclick=()=>{$('offer').hidden=true;drawOffer=null;toast('Draw declined')};
 $('bRotate').onclick=()=>{S.rotate=!S.rotate;saveS();updateButtons();if(S.rotate&&!over)scene.setView(game.turn());renderClocks()};
-const CAMS=['Player','Top','Side'];$('bView').textContent='Camera: '+scene.camMode;
-$('bView').onclick=()=>{scene.camMode=CAMS[(CAMS.indexOf(scene.camMode)+1)%3];localStorage.setItem('camMode',scene.camMode);$('bView').textContent='Camera: '+scene.camMode;scene.setView(current&&current.mode==='2p'?(S.rotate?game.turn():scene.view.side):human)};
+const CAMS=['Player','Top','Side','Free'];$('bView').textContent='Camera: '+scene.camMode;
+$('bView').onclick=()=>{scene.camMode=CAMS[(CAMS.indexOf(scene.camMode)+1)%4];localStorage.setItem('camMode',scene.camMode);$('bView').textContent='Camera: '+scene.camMode;scene.setView(current&&current.mode==='2p'?(S.rotate?game.turn():scene.view.side):human)};
 $('bSound').onclick=()=>{S.sound=!S.sound;setSound(S.sound);saveS();updateButtons();unlockAudio();play('select')};
 $('menuBtn').onclick=()=>openMenu();
 

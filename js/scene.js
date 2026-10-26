@@ -25,7 +25,7 @@ export class ChessScene{
     this.camera=new THREE.PerspectiveCamera(36,1,0.1,200);
     const ctl=this.controls=new OrbitControls(this.camera,r.domElement);
     ctl.enableDamping=true;ctl.dampingFactor=.12;ctl.enablePan=false;ctl.minDistance=5;ctl.maxDistance=42;
-    ctl.enableRotate=false;ctl.maxPolarAngle=1.4;ctl.minPolarAngle=0;this.camMode=localStorage.getItem('camMode')||'Player';ctl.target.set(0,0.3,0);ctl.rotateSpeed=.7;
+    ctl.enableRotate=(localStorage.getItem('camMode')==='Free');ctl.maxPolarAngle=1.4;ctl.minPolarAngle=0;this.camMode=localStorage.getItem('camMode')||'Player';ctl.target.set(0,0.3,0);ctl.rotateSpeed=.7;
     ctl.addEventListener('start',()=>{this.userOrbit=true;this.camTween=null});
     // lights
     sc.add(new THREE.HemisphereLight(0xffeedd,0x2a1a10,0.55));
@@ -180,7 +180,7 @@ export class ChessScene{
   }
   setCamMode(m){this.camMode=m;localStorage.setItem('camMode',m);this.setView(this.view.side)}
   setView(side,animate=true){
-    this.view.side=side;
+    this.view.side=side;this.controls.enableRotate=this.camMode==='Free';
     const {r,polar}=this._fit();
     const theta=(side==='w'?0:Math.PI)+(this.camMode==='Side'?Math.PI/2:0);
     const target={r,phi:polar,theta};
