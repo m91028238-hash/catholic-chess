@@ -56,3 +56,6 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 .credits summary{color:#c9a86c;cursor:pointer}
 .credits ul{padding-left:18px;margin-top:6px;line-height:1.45}.credits p{margin-top:6px;line-height:1.45}
 .credits a{color:#ffd98a}
+.zoomui{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.zoomui[hidden]{display:none}
+.zoomui button{width:38px;height:38px;border-radius:10px;border:1px solid rgba(201,168,108,.6);background:rgba(42,26,16,.78);color:#ffe2a6;font-size:1.3rem;line-height:1}

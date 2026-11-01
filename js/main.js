@@ -1,7 +1,7 @@
 import { Chess } from '../vendor/chess.js?v=2';
-import { ChessScene } from './scene.js?v=4';
-import * as AI from './ai.js?v=4';
-import { play, setSound, unlockAudio } from './sound.js?v=4';
+import { ChessScene } from './scene.js?v=5';
+import * as AI from './ai.js?v=5';
+import { play, setSound, unlockAudio } from './sound.js?v=5';
 
 const $=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
@@ -278,5 +278,5 @@ window.CC={
   load:(fen)=>{game.load(fen);scene.sync(game.board(),false);refreshMarkers();setStatus()},
   pieces:()=>scene.pieces.filter(p=>p.userData.square).map(p=>p.userData.color+p.userData.type+p.userData.square).sort(),
   promo:(p)=>{const b=document.querySelector(`#promoBtns [data-p="${p}"]`);b&&b.click()},
-  engine:()=>AI.engineStatus(),
+  engine:()=>AI.engineStatus(),scene,
 };

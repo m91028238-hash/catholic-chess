@@ -1,8 +1,9 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=4';
-import { pieceGeometries } from './pieces.js?v=4';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=5';
+import { pieceGeometries } from './pieces.js?v=5';
+import { buildBasilica, buildPlinth, BOUNDS } from './basilica.js?v=5';
 
 const TOP=0.32;
 const FILES='abcdefgh';
@@ -17,25 +18,27 @@ export class ChessScene{
     const r=this.renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:true});
     r.setPixelRatio(Math.min(window.devicePixelRatio||1,mobile?2:2));
     r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;
-    r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.05;r.outputColorSpace=THREE.SRGBColorSpace;
+    r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=.92;r.outputColorSpace=THREE.SRGBColorSpace;
     host.appendChild(r.domElement);
     const sc=this.scene=new THREE.Scene();
-    sc.background=new THREE.Color(0x1a110b);sc.fog=new THREE.Fog(0x1a110b,26,55);
-    const pm=new THREE.PMREMGenerator(r);sc.environment=pm.fromScene(new RoomEnvironment(),0.04).texture;sc.environmentIntensity=0.45;
-    this.camera=new THREE.PerspectiveCamera(36,1,0.1,200);
+    sc.background=new THREE.Color(0x3a2a1c);sc.fog=new THREE.Fog(0x4a3826,60,260);
+    const pm=new THREE.PMREMGenerator(r);this.env=sc.environment=pm.fromScene(new RoomEnvironment(),0.04).texture;sc.environmentIntensity=0.45;
+    this.camera=new THREE.PerspectiveCamera(36,1,0.1,420);
     const ctl=this.controls=new OrbitControls(this.camera,r.domElement);
     ctl.enableDamping=true;ctl.dampingFactor=.12;ctl.enablePan=false;ctl.minDistance=5;ctl.maxDistance=42;
     ctl.enableRotate=(localStorage.getItem('camMode')==='Free');ctl.maxPolarAngle=1.4;ctl.minPolarAngle=0;this.camMode=localStorage.getItem('camMode')||'Player';ctl.target.set(0,0.3,0);ctl.rotateSpeed=.7;
     ctl.addEventListener('start',()=>{this.userOrbit=true;this.camTween=null});
     // lights
-    sc.add(new THREE.HemisphereLight(0xffeedd,0x2a1a10,0.55));
-    const d=this.sun=new THREE.DirectionalLight(0xffe0b0,2.4);d.position.set(5,14,7);d.castShadow=true;
+    sc.add(new THREE.HemisphereLight(0xfff0dc,0x5a4028,0.5));
+    const d=this.sun=new THREE.DirectionalLight(0xffe4b8,2.0);d.position.set(5,14,7);d.castShadow=true;
     const S=d.shadow;S.mapSize.set(mobile?1024:2048,mobile?1024:2048);S.camera.left=-11;S.camera.right=11;S.camera.top=8;S.camera.bottom=-8;S.camera.near=4;S.camera.far=30;S.bias=-0.0004;S.normalBias=0.02;S.radius=4;
     sc.add(d);
     const fill=new THREE.PointLight(0xffb070,18,40,1.6);fill.position.set(-8,6,-6);sc.add(fill);
     this.markers=new THREE.Group();sc.add(this.markers);
     this.graveSlots={w:0,b:0};
-    this._buildTable();
+    buildPlinth(sc,{env:this.env});
+    this.basilica=buildBasilica(sc,{env:this.env,mobile});
+    this._buildZoomUI();
     this.ray=new THREE.Raycaster();
     this._bindInput();
     window.addEventListener('resize',()=>this.resize());
@@ -49,42 +52,58 @@ export class ChessScene{
     this._buildBoard({benedict:ben,christ:chr});
     this._buildMaterials();
   }
-  _buildTable(){
-    const c=woodCanvas(1024,1024,{light:[112,36,22],dark:[58,16,10],seed:3,freq:14,warp:3.5,stretch:4,axis:'x',contrast:1.1});
-    const t=canvasTex(c,{repeat:1});t.repeat.set(2,3);
-    const m=new THREE.MeshPhysicalMaterial({map:t,roughness:.42,clearcoat:.5,clearcoatRoughness:.35,color:0xffffff});
-    const g=new THREE.PlaneGeometry(60,40);g.rotateX(-Math.PI/2);
-    const mesh=new THREE.Mesh(g,m);mesh.receiveShadow=true;this.scene.add(mesh);
+  _buildZoomUI(){
+    const w=this.zoomUI=document.createElement('div');w.className='zoomui';w.hidden=true;
+    w.innerHTML='<button aria-label="Zoom in" data-z="0.7">+</button><button aria-label="Zoom out" data-z="1.43">−</button>';
+    w.addEventListener('click',e=>{const b=e.target.closest('button');if(b)this.zoom(+b.dataset.z)});
+    this.host.appendChild(w);
   }
+  zoom(f){const c=this.controls;const cur=new THREE.Spherical().setFromVector3(this.camera.position.clone().sub(c.target));
+    const r=THREE.MathUtils.clamp(cur.radius*f,c.minDistance,c.maxDistance);this.userOrbit=true;
+    this.camTween={from:{r:cur.radius,phi:cur.phi,theta:cur.theta},to:{r,phi:cur.phi,theta:cur.theta},t0:performance.now(),dur:260}}
   _buildBoard(imgs){
     const {W,H}=BOARD;
     const ppu=this.mobile?128:160;
     const {color,hr}=buildBoardTextures(ppu,imgs);
     const map=canvasTex(color,{aniso:this.renderer.capabilities.getMaxAnisotropy()});map.wrapS=map.wrapT=THREE.ClampToEdgeWrapping;
     const hmap=canvasTex(hr,{srgb:false});hmap.wrapS=hmap.wrapT=THREE.ClampToEdgeWrapping;
-    const topMat=new THREE.MeshStandardMaterial({map,bumpMap:hmap,bumpScale:2.2,roughnessMap:hmap,roughness:1,metalness:0});
+    const topMat=new THREE.MeshStandardMaterial({map,bumpMap:hmap,bumpScale:2.2,roughnessMap:hmap,roughness:1,metalness:0,color:0xd6ba90});
     const edgeC=woodCanvas(512,128,{light:[226,198,150],dark:[200,160,108],seed:11,freq:5,warp:2,stretch:3,axis:'x'});
     const edgeMat=new THREE.MeshStandardMaterial({map:canvasTex(edgeC),roughness:.6});
     const box=new THREE.BoxGeometry(W,TOP,H);box.translate(0,TOP/2,0);
     // box face order: +x,-x,+y,-y,+z,-z
     const mats=[edgeMat,edgeMat,topMat,edgeMat,edgeMat,edgeMat];
+    // gilded frame around the board
+    this.gold=new THREE.MeshStandardMaterial({color:0xd8aa48,metalness:1,roughness:.28,envMap:this.env,envMapIntensity:1.5});
+    for(const [w,d,x,z] of [[W+.36,.18,0,H/2+.09],[W+.36,.18,0,-H/2-.09],[.18,H,W/2+.09,0],[.18,H,-W/2-.09,0]]){const f=new THREE.Mesh(new THREE.BoxGeometry(w,TOP+.05,d),this.gold);f.position.set(x,(TOP+.05)/2,z);f.castShadow=true;this.scene.add(f)}
     const b=this.board=new THREE.Mesh(box,mats);b.receiveShadow=true;b.castShadow=true;this.scene.add(b);
     // BoxGeometry top-face UV: u along +x, v=1 at -z -> matches canvas (top row = rank 8 side)
     const pick=new THREE.Mesh(new THREE.PlaneGeometry(8,8).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({visible:false}));
     pick.position.y=TOP;this.pickPlane=pick;this.scene.add(pick);
   }
   _buildMaterials(){
-    const box=woodCanvas(512,512,{light:[226,184,118],dark:[190,142,78],seed:21,freq:7,warp:2,stretch:5,axis:'y',contrast:.8});
-    const rose=woodCanvas(512,512,{light:[150,56,30],dark:[74,22,12],seed:33,freq:11,warp:3,stretch:5,axis:'y',contrast:1});
-    const mk=(c)=>new THREE.MeshPhysicalMaterial({map:canvasTex(c),roughness:.32,clearcoat:.8,clearcoatRoughness:.18,sheen:0});
-    this.mat={w:mk(box),b:mk(rose)};
+    // white: warm polished ivory with a soft pearly rim; black: deep oxblood lacquer with a gold sheen
+    const iv=woodCanvas(256,512,{light:[255,248,232],dark:[238,224,198],seed:21,freq:5,warp:2,stretch:6,axis:'y',contrast:.5});
+    const ox=woodCanvas(256,512,{light:[120,18,26],dark:[70,8,14],seed:33,freq:9,warp:3,stretch:6,axis:'y',contrast:.8});
+    this.mat={
+      w:new THREE.MeshPhysicalMaterial({map:canvasTex(iv),color:0xfff6e6,roughness:.26,clearcoat:.9,clearcoatRoughness:.15,sheen:1,sheenColor:new THREE.Color(0xffe2b0),sheenRoughness:.3,emissive:0x3a2c1a,emissiveIntensity:.55}),
+      b:new THREE.MeshPhysicalMaterial({map:canvasTex(ox),roughness:.24,clearcoat:1,clearcoatRoughness:.08,sheen:.8,sheenColor:new THREE.Color(0xc89040),sheenRoughness:.35})};
+    if(!this.gold)this.gold=new THREE.MeshStandardMaterial({color:0xd8aa48,metalness:1,roughness:.28,envMap:this.env,envMapIntensity:1.5});
     this.geo=pieceGeometries();
+    // gold rings: one on the widest part of the base, a collar at the narrowest neck (lathe pieces)
+    this.trim={};
+    for(const t in this.geo){const P=this.geo[t].attributes.position,h=this.geo[t].boundingBox.max.y;
+      const radAt=(y0,y1)=>{let best=[0,0],min=[9,0];for(let i=0;i<P.count;i++){const y=P.getY(i);if(y<y0||y>y1)continue;const r=Math.hypot(P.getX(i),P.getZ(i));if(r>best[0])best=[r,y]}return best};
+      const [rb,yb]=radAt(0.02,0.25*h);const rings=[[rb+.004,yb,.026]];
+      if(t!=='n'){const buckets={};for(let i=0;i<P.count;i++){const y=P.getY(i);if(y<.4*h||y>.8*h)continue;const k=Math.round(y*50);const r=Math.hypot(P.getX(i),P.getZ(i));buckets[k]=Math.max(buckets[k]||0,r)}
+        let mk=null;for(const k in buckets)if(mk===null||buckets[k]<buckets[mk])mk=k;if(mk!==null)rings.push([buckets[mk]+.012,mk/50,.024])}
+      this.trim[t]=rings.map(([r,y,tb])=>{const g=new THREE.TorusGeometry(r,tb,8,40);g.rotateX(Math.PI/2);g.translate(0,y,0);return g})}
   }
   // ---------- pieces ----------
   makePiece(type,color){
     const m=new THREE.Mesh(this.geo[type],this.mat[color]);
     m.castShadow=true;m.receiveShadow=true;
-    if(color==='w'){if(!this.olMat)this.olMat=new THREE.MeshBasicMaterial({color:0x3a2412,side:THREE.BackSide});const o=new THREE.Mesh(this.geo[type],this.olMat);o.scale.setScalar(1.05);o.raycast=()=>{};m.add(o)}
+    for(const g of this.trim[type]){const o=new THREE.Mesh(g,this.gold);o.castShadow=true;o.raycast=()=>{};m.add(o)}
     m.userData={type,color,square:null};
     if(type==='n')m.rotation.y=color==='w'?Math.PI/2:-Math.PI/2; // face the opponent
     if(type==='b')m.rotation.y=Math.PI/4;
@@ -181,7 +200,9 @@ export class ChessScene{
   }
   setCamMode(m){this.camMode=m;localStorage.setItem('camMode',m);this.setView(this.view.side)}
   setView(side,animate=true){
-    this.view.side=side;this.controls.enableRotate=this.camMode==='Free';
+    this.view.side=side;const free=this.camMode==='Free',c=this.controls;c.enableRotate=free;c.enablePan=free;c.zoomToCursor=free;
+    c.minDistance=free?1.6:5;c.maxDistance=free?95:42;c.maxPolarAngle=free?1.75:1.4;c.panSpeed=1.2;
+    if(!free||!this._wasFree)c.target.set(0,0.3,0);this._wasFree=free;if(this.zoomUI)this.zoomUI.hidden=!free;const fov=free?55:36;if(this.camera.fov!==fov){this.camera.fov=fov;this.camera.updateProjectionMatrix()}
     const {r,polar}=this._fit();
     const theta=(side==='w'?0:Math.PI)+(this.camMode==='Side'?Math.PI/2:0);
     const target={r,phi:polar,theta};
@@ -224,6 +245,9 @@ export class ChessScene{
       if(t>=1){tw.done&&tw.done()}else keep.push(tw)}
     const fresh=this.tweens;this.tweens=keep.filter(k=>!fresh.some(f=>f.obj===k.obj)).concat(fresh);
     this.controls.update();
+    if(this.camMode==='Free'){const p=this.camera.position,t=this.controls.target,B=BOUNDS;
+      p.x=THREE.MathUtils.clamp(p.x,-B.x,B.x);p.y=THREE.MathUtils.clamp(p.y,B.yMin,B.yMax);p.z=THREE.MathUtils.clamp(p.z,B.zMin,B.zMax);
+      t.x=THREE.MathUtils.clamp(t.x,-B.x,B.x);t.y=THREE.MathUtils.clamp(t.y,B.yMin-1,B.yMax);t.z=THREE.MathUtils.clamp(t.z,B.zMin,B.zMax)}
     this.renderer.render(this.scene,this.camera);
   }
   get busy(){return this.tweens.length>0}

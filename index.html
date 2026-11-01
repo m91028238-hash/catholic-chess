@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#2a1a10">
 <meta name="description" content="3D chess on an engraved wooden board with crosses and saints. Play the computer, a friend, or climb the campaign ladder.">
 <title>Catholic Chess</title>
-<link rel="stylesheet" href="css/style.css?v=4">
-<script type="importmap">{"imports":{"three":"./vendor/three.bundle.min.js?v=4"}}</script>
+<link rel="stylesheet" href="css/style.css?v=5">
+<script type="importmap">{"imports":{"three":"./vendor/three.bundle.min.js?v=5"}}</script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="15ec783e-8882-42d9-b43b-fefd064bbe24"></script>
 </head>
 <body>
@@ -40,7 +40,7 @@
   <div class="mwrap">
     <a class="home" href="https://m91028238-hash.github.io/catholic-mini-games/">‹ Catholic Games</a>
     <h1>Catholic Chess</h1>
-    <p class="sub">An engraved wooden board, boxwood and rosewood pieces.</p>
+    <p class="sub">An engraved wooden board, ivory and oxblood pieces, in St Peter’s Basilica.</p>
     <div class="sec"><h3>Mode</h3><div id="mMode" class="chips"></div></div>
     <div class="sec" id="secDiff"><h3>Difficulty</h3><div id="mDiff" class="chips"></div></div>
     <div class="sec" id="secCamp"><h3>Campaign ladder</h3><div id="mCamp" class="ladder"></div></div>
@@ -49,12 +49,13 @@
     <div class="sec"><h3>Clock (each side)</h3><div id="mClock" class="chips"></div></div>
     <div class="row big"><button id="mStart">Start game</button><button id="mResume" class="ghost" hidden>Resume</button></div>
     <details class="credits"><summary>How to play</summary>
-      <p>Tap a piece to see its legal moves, then tap a dot to move. Pinch to zoom; the “Camera” button cycles Player, Top, Side and Free views (in Free, drag to rotate). Win a campaign game to unlock the next opponent; you can replay any unlocked level.</p>
+      <p>Tap a piece to see its legal moves, then tap a dot to move. Pinch to zoom; the “Camera” button cycles Player, Top, Side and Free views (in Free, drag to rotate, two-finger drag or right-drag to pan, pinch, wheel or the + and − buttons to zoom from the board out to the whole basilica). Win a campaign game to unlock the next opponent; you can replay any unlocked level.</p>
     </details>
     <details class="credits" id="credits"><summary>Credits &amp; licences</summary>
       <ul>
         <li><b>three.js</b> r186 — MIT licence, © three.js authors.</li>
         <li><b>chess.js</b> 1.4.0 — BSD 2-Clause, © Jeff Hlywa. Rules, check, mate, draws.</li>
+        <li><b>St Peter’s Basilica scenery and mosaic panels</b> — procedural geometry and canvas painting made for this game.</li>
         <li><b>Board, pieces, wood textures and sounds</b> — made procedurally for this game (lathe-turned Staunton pieces, sculpted knight, synthesised wood clicks).</li>
         <li><b>Side panels</b> (Christ: Chi-Rho, IHS; St Benedict medal) — procedural engraving made for this game, inspired by a real laser-engraved board.</li>
         <li>This game’s own code is released under GPLv3. See ASSETS.md in the repository.</li>
@@ -62,6 +63,6 @@
     </details>
   </div>
 </div>
-<script type="module" src="js/main.js?v=4"></script>
+<script type="module" src="js/main.js?v=5"></script>
 </body>
 </html>
