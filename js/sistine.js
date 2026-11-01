@@ -1,7 +1,7 @@
 // The Sistine Chapel built as real geometry around the board (real proportions: 40.9 x 13.4 x 20.7 m),
 // textured with public-domain fresco scans from Wikimedia Commons (see ASSETS.md / Image credits).
 import * as THREE from 'three';
-import { FLOOR } from './basilica.js?v=8';
+import { FLOOR } from './basilica.js?v=9';
 
 const S=2.6;                        // scene units per metre
 export const ROOM={W:13.4*S,L:40.9*S,H:20.7*S,y0:FLOOR};
@@ -17,6 +17,7 @@ const TITLES={baptism:'Baptism of Christ',temptations:'Temptations of Christ',ca
   journey:'Moses’s Journey',trials:'Trials of Moses',redsea:'Crossing of the Red Sea',law:'Tables of the Law',korah:'Punishment of Korah',testament:'Testament of Moses'};
 const SOUTH=[['journey',1280/782],['trials',1280/797],['redsea',1217/748],['law',1265/748],['korah',1515/948],['testament',1280/806]];
 
+const HD=['judgement','baptism','temptations','keys','journey','trials','testament'];
 const cv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return [c,c.getContext('2d')]};
 let seed=11;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
 const basic=(o)=>new THREE.MeshBasicMaterial(Object.assign({toneMapped:false},o));
@@ -30,9 +31,9 @@ export class Sistine{
     this._floor();this._walls();this._vault();this._altar();this._transenna();
   }
   tex(c,rx=1,ry=1){const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.anisotropy=this.aniso;return t}
-  load(name,mat){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=8`,t=>{
+  load(name,mat){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=9`,t=>{
     t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
-    mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true;res(t)},undefined,()=>{console.warn('art',name);res(null)}))}
+    mat.userData.base=t;(this.mats||(this.mats={}))[name]=mat;if(!(this.hdTex&&this.hdTex[name]))mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true;res(t)},undefined,()=>{console.warn('art',name);res(null)}))}
   // ---------- floor: Cosmatesque marble inlay (one tile = the chapel's width) ----------
   _floor(){
     const N=2048,[c,x]=cv(N,N),u=N/13.4; // px per metre
@@ -153,6 +154,15 @@ export class Sistine{
       {id:'christ',name:'Christ the Judge',c:new THREE.Vector3(L.c.x-.02*L.w,L.c.y+L.h*(.5-.31),L.c.z),n:new THREE.Vector3(0,0,1),w:L.w*.3,h:L.h*.2,yaw:0,pitch:0}];
     return top.concat(this.arts);
   }
+  // Hi-res originals, only for the one or two frescoes the pilgrim is looking at (keeps phone GPU memory low)
+  wantHD(name){if(!HD.includes(name)||this.r.capabilities.maxTextureSize<3072)return;
+    const L=this.hdList||(this.hdList=[]),T=this.hdTex||(this.hdTex={}),i=L.indexOf(name);
+    if(i>=0){L.splice(i,1);L.push(name);return}
+    L.push(name);while(L.length>2)this._dropHD(L.shift());
+    this.loader.load(`assets/sistine/hd/${name}.jpg?v=9`,t=>{const mat=this.mats&&this.mats[name];if(!L.includes(name)||!mat){t.dispose();return}
+      t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
+      T[name]=t;mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true},undefined,()=>{const k=L.indexOf(name);if(k>=0)L.splice(k,1)})}
+  _dropHD(name){const t=this.hdTex[name];if(!t)return;const mat=this.mats[name];if(mat&&mat.userData.base){mat.map=mat.userData.base;mat.needsUpdate=true}t.dispose();delete this.hdTex[name]}
   loadCeiling(){return this.load(this.big?'ceiling-3129':'ceiling-2048',this.ceilMat)}
   loadArt(){return Promise.all([this.load('judgement',this.ljMat),...this.frescoMats.map(([n,mt])=>this.load(n,mt))])}
 }

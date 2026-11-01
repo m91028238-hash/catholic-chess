@@ -1,15 +1,18 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=8';
-import { pieceGeometries } from './pieces.js?v=8';
-import { buildPlinth } from './basilica.js?v=8';
-import { Sistine, ROOM, ceilingAt, VAULT } from './sistine.js?v=8';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=9';
+import { pieceGeometries } from './pieces.js?v=9';
+import { buildPlinth } from './basilica.js?v=9';
+import { Sistine, ROOM } from './sistine.js?v=9';
 
 const TOP=0.32;
 const FILES='abcdefgh';
 export const sqPos=(sq)=>new THREE.Vector3(FILES.indexOf(sq[0])-3.5,TOP,4.5-(+sq[1]));
 const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const segBox=(a,b,x0,x1,z0,z1)=>{let t0=0,t1=1;const d=[b.x-a.x,b.z-a.z],o=[a.x,a.z],lo=[x0,z0],hi=[x1,z1];
+  for(let i=0;i<2;i++){if(Math.abs(d[i])<1e-9){if(o[i]<lo[i]||o[i]>hi[i])return false;continue}
+    let u=(lo[i]-o[i])/d[i],v=(hi[i]-o[i])/d[i];if(u>v)[u,v]=[v,u];t0=Math.max(t0,u);t1=Math.min(t1,v);if(t0>t1)return false}return true};
 
 export class ChessScene{
   constructor(host,{onTap}){
@@ -27,7 +30,7 @@ export class ChessScene{
     this.camera=new THREE.PerspectiveCamera(36,1,0.1,420);
     const ctl=this.controls=new OrbitControls(this.camera,r.domElement);
     ctl.enableDamping=true;ctl.dampingFactor=.12;ctl.enablePan=false;ctl.minDistance=5;ctl.maxDistance=42;
-    ctl.enableRotate=false;ctl.maxPolarAngle=1.4;ctl.minPolarAngle=0.02;this.camMode=localStorage.getItem('camMode')||'Player';ctl.target.set(0,0.3,0);ctl.rotateSpeed=.7;
+    ctl.enableRotate=false;ctl.maxPolarAngle=1.4;ctl.minPolarAngle=0.02;this.camMode=({Free:'Walk'})[localStorage.getItem('camMode')]||localStorage.getItem('camMode')||'Player';ctl.target.set(0,0.3,0);ctl.rotateSpeed=.7;
     ctl.addEventListener('start',()=>{this.userOrbit=true;this.camTween=null});
     // lights
     sc.add(new THREE.HemisphereLight(0xfff0dc,0x6a5038,0.75));
@@ -59,62 +62,119 @@ export class ChessScene{
     w.innerHTML='<button aria-label="Zoom in" data-z="0.7">+</button><button aria-label="Zoom out" data-z="1.43">−</button>';
     w.addEventListener('click',e=>{const b=e.target.closest('button');if(b)this.zoom(+b.dataset.z)});
     this.host.appendChild(w);
-    // Free cam: compact quick-jump strip (scrolls sideways), collapsible
+    // Walk: compact quick-jump strip along the top (scrolls sideways), collapsible
     const a=this.artUI=document.createElement('div');a.className='artui';a.hidden=true;
     if(localStorage.getItem('artOpen')==='0')a.classList.add('shut');
-    a.innerHTML='<button class="tog" data-k="tog">Artworks</button><button data-k="reset">Reset view</button>'+
+    a.innerHTML='<button data-k="back">Back to board</button><button class="tog" data-k="tog">Artworks</button>'+
       this.room.artworks().map(o=>`<button data-k="${o.id}">${o.name}</button>`).join('');
     a.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;
       if(k==='tog'){a.classList.toggle('shut');localStorage.setItem('artOpen',a.classList.contains('shut')?'0':'1')}
-      else if(k==='reset')this.resetFree();else this.flyToArt(k)});
+      else if(k==='back')this.backToBoard();else this.walkToArt(k)});
     this.host.appendChild(a);
+    // Walk: virtual joystick (bottom-left)
+    const j=this.joyUI=document.createElement('div');j.className='joy';j.hidden=true;j.innerHTML='<div class="knob"></div>';this.host.appendChild(j);
+    const J=this.joy={x:0,y:0,id:null},R=44,knob=j.firstChild;
+    const setK=(dx,dy)=>{const l=Math.hypot(dx,dy),s=l>R?R/l:1;dx*=s;dy*=s;knob.style.transform=`translate(${dx}px,${dy}px)`;
+      let x=dx/R,y=dy/R;const m=Math.hypot(x,y);if(m<.15){x=y=0}else{const k=(m-.15)/.85/m;x*=k;y*=k}J.x=x;J.y=y};
+    j.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();J.id=e.pointerId;try{j.setPointerCapture(e.pointerId)}catch(_){}
+      const r=j.getBoundingClientRect();J.cx=r.left+r.width/2;J.cy=r.top+r.height/2;setK(e.clientX-J.cx,e.clientY-J.cy);if(this.walk)this.walk.glide=null});
+    j.addEventListener('pointermove',e=>{if(e.pointerId===J.id)setK(e.clientX-J.cx,e.clientY-J.cy)});
+    const end=e=>{if(e.pointerId!==J.id)return;J.id=null;setK(0,0)};
+    j.addEventListener('pointerup',end);j.addEventListener('pointercancel',end);
   }
-  zoom(f){ // Free cam: optical zoom (field of view), down to 10° for fine detail
-    if(!this.fly)return;this.fly.fovTo=THREE.MathUtils.clamp(this.fly.fovTo*f,10,75)}
-  // ---------- free (fly/look) camera ----------
-  _enterFree(){
-    this.controls.enabled=false;this.camTween=null;const c=this.camera;
-    if(!this._placed){c.position.set(0,9,this.view.side==='b'?-17:17);c.lookAt(0,.3,0)}
-    const e=new THREE.Euler().setFromQuaternion(c.quaternion,'YXZ');
-    this.fly={yaw:e.y,pitch:e.x,fov:60,fovTo:60,tw:null};c.rotation.order='YXZ';c.fov=60;this._offset();
-    this.zoomUI.hidden=this.artUI.hidden=false;this._applyFly();
+  zoom(f){ // Walk: optical zoom (field of view)
+    if(!this.walk)return;this.walk.fovTo=THREE.MathUtils.clamp(this.walk.fovTo*f,15,75)}
+  // ---------- Walk: first-person pilgrim on the chapel floor ----------
+  _buildBody(){
+    const M=2.6,g=new THREE.Group();g.visible=false;
+    const wool=new THREE.MeshStandardMaterial({color:0x8a6446,roughness:.92,metalness:0,emissive:0x2a1a10,emissiveIntensity:1});
+    const skin=new THREE.MeshStandardMaterial({color:0xdcae8c,roughness:.7,emissive:0x3a2418,emissiveIntensity:1});
+    const leather=new THREE.MeshStandardMaterial({color:0x6e4a2c,roughness:.75,emissive:0x1e120a,emissiveIntensity:1});
+    const cord=new THREE.MeshStandardMaterial({color:0xc9a85a,roughness:.55,metalness:.2});
+    // tunic: lathe from the hem (mid-calf) to the shoulders, slightly flattened front-to-back
+    const prof=[[.27,.42],[.255,.6],[.215,.98],[.2,1.05],[.215,1.3],[.2,1.42],[.12,1.47],[.07,1.5]].map(([r,y])=>new THREE.Vector2(r*M,y*M));
+    const robe=new THREE.Mesh(new THREE.LatheGeometry(prof,28),wool);robe.scale.z=.72;robe.position.z=.23*M;g.add(robe);
+    const belt=new THREE.Mesh(new THREE.TorusGeometry(.205*M,.014*M,6,28),cord);belt.rotation.x=Math.PI/2;belt.scale.y=.72;belt.position.set(0,1.0*M,.23*M);g.add(belt);
+    const knot=new THREE.Mesh(new THREE.CylinderGeometry(.01*M,.01*M,.35*M,6),cord);knot.position.set(.06*M,.82*M,.08*M);g.add(knot);
+    this.legs=[];
+    for(const sx of [-1,1]){
+      const hip=new THREE.Group();hip.position.set(sx*.1*M,.62*M,.12*M);g.add(hip);
+      const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.055*M,.42*M,4,10),skin);leg.position.y=-.27*M;hip.add(leg);
+      const foot=new THREE.Mesh(new THREE.BoxGeometry(.1*M,.05*M,.25*M),leather);foot.position.set(0,-.575*M,-.09*M);hip.add(foot);
+      this.legs.push(hip);
+      const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.05*M,.5*M,4,10),wool);arm.position.set(sx*.25*M,1.08*M,.22*M);arm.rotation.z=sx*.08;g.add(arm);
+      const hand=new THREE.Mesh(new THREE.SphereGeometry(.045*M,10,8),skin);hand.position.set(sx*.27*M,.76*M,.2*M);g.add(hand);
+    }
+    g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+    const [c,x]=(()=>{const c=document.createElement('canvas');c.width=c.height=128;return [c,c.getContext('2d')]})();
+    const gr=x.createRadialGradient(64,64,6,64,64,64);gr.addColorStop(0,'rgba(0,0,0,.42)');gr.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=gr;x.fillRect(0,0,128,128);
+    const blob=new THREE.Mesh(new THREE.PlaneGeometry(1.1*M,1.1*M).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false,toneMapped:false}));
+    blob.position.set(0,.01,.12*M);blob.renderOrder=1;g.add(blob);
+    this.scene.add(g);return g}
+  _seatPose(){const s=this.view.side==='b'?-1:1;return {x:0,z:9.7*s,yaw:s>0?0:Math.PI,pitch:-.3}}
+  _enterWalk(){
+    this.controls.enabled=false;this.camTween=null;const c=this.camera;c.rotation.order='YXZ';
+    const P=this._seatPose();
+    this.walk={pos:new THREE.Vector3(P.x,0,P.z),vel:new THREE.Vector3(),yaw:P.yaw,yawT:P.yaw,pitch:P.pitch,pitchT:P.pitch,fov:70,fovTo:70,phase:0,glide:null,hdT:0};
+    if(!this.body)this.body=this._buildBody();this.body.visible=true;
+    c.fov=70;this._offset();this.zoomUI.hidden=this.artUI.hidden=this.joyUI.hidden=false;this._walkStep(performance.now());
   }
-  _exitFree(){this.fly=null;this.keys.clear();this.controls.enabled=true;this.camera.rotation.order='XYZ';this.zoomUI.hidden=this.artUI.hidden=true}
-  _homePose(){const s=this.view.side==='b'?-1:1;const p=new THREE.Vector3(0,9,17*s);const d=new THREE.Vector3(0,.3,0).sub(p);
-    return {p,yaw:Math.atan2(-d.x,-d.z),pitch:Math.atan2(d.y,Math.hypot(d.x,d.z)),fov:60}}
-  resetFree(){if(this.fly)this._flyTo(this._homePose())}
-  flyToArt(id){if(!this.fly)return;const o=this.room.artworks().find(a=>a.id===id);if(!o)return;
-    const vf=THREE.MathUtils.degToRad(60)/2,hf=Math.atan(Math.tan(vf)*this.camera.aspect);
-    const whole=Math.max(o.h/2/Math.tan(vf),o.w/2/Math.tan(hf))*1.06,d=Math.min(whole,o.h/2/Math.tan(vf)*1.6);
-    this._flyTo({p:o.c.clone().addScaledVector(o.n,d),yaw:o.yaw,pitch:o.pitch,fov:60})}
-  _flyTo(to){const f=this.fly;to.p=this._clampPos(to.p.clone());
-    let dy=to.yaw-f.yaw;while(dy>Math.PI)dy-=2*Math.PI;while(dy<-Math.PI)dy+=2*Math.PI;
-    const dist=this.camera.position.distanceTo(to.p);
-    f.tw={from:{p:this.camera.position.clone(),yaw:f.yaw,pitch:f.pitch,fov:f.fov},to:{p:to.p,yaw:f.yaw+dy,pitch:to.pitch,fov:to.fov},t0:performance.now(),dur:THREE.MathUtils.clamp(500+dist*14,600,1500)}}
-  _clampPos(p){ // anywhere inside the chapel, ~0.3 m from walls, floor and vault
-    const M=.3*2.6,X=ROOM.W/2-M,Z=ROOM.L/2-M,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
-    p.x=cl(p.x,-X,X);p.z=cl(p.z,-Z,Z);p.y=Math.max(p.y,ROOM.y0+M);
-    const dy=p.y-VAULT.YC,r=Math.hypot(p.x,dy),R=VAULT.R-M;if(dy>0&&r>R){p.x*=R/r;p.y=VAULT.YC+dy*R/r}
-    return p}
-  _applyFly(){const f=this.fly,c=this.camera;f.pitch=THREE.MathUtils.clamp(f.pitch,-Math.PI/2+1e-3,Math.PI/2-1e-3);
-    this._clampPos(c.position);c.rotation.set(f.pitch,f.yaw,0,'YXZ');if(c.fov!==f.fov){c.fov=f.fov;c.updateProjectionMatrix()}}
-  _focusDist(){ // distance to whatever is in the middle of the view (for natural pan / dolly speeds)
-    this.ray.setFromCamera(new THREE.Vector2(0,0),this.camera);const h=this.ray.intersectObject(this.room.g,true);return h.length?h[0].distance:20}
-  _flyLook(dx,dy){const f=this.fly,k=THREE.MathUtils.degToRad(f.fov)/(this.renderer.domElement.clientHeight||1);f.tw=null;f.yaw+=dx*k;f.pitch+=dy*k}
-  _flyPan(dx,dy){const f=this.fly,c=this.camera;f.tw=null;const d=Math.max(this._focusDist(),1.5);
-    const wpp=2*d*Math.tan(THREE.MathUtils.degToRad(f.fov)/2)/(this.renderer.domElement.clientHeight||1);
-    const R=new THREE.Vector3(1,0,0).applyQuaternion(c.quaternion),U=new THREE.Vector3(0,1,0).applyQuaternion(c.quaternion);
-    c.position.addScaledVector(R,-dx*wpp).addScaledVector(U,dy*wpp)}
-  _flyDolly(amt){this.fly.tw=null;const F=new THREE.Vector3();this.camera.getWorldDirection(F);this.camera.position.addScaledVector(F,amt)}
-  _flyStep(now){const f=this.fly,c=this.camera,dt=Math.min(.1,(now-(this._lastT||now))/1000);
-    if(f.tw){const w=f.tw,t=Math.min(1,Math.max(0,(now-w.t0)/w.dur)),e=easeIO(t);
-      c.position.lerpVectors(w.from.p,w.to.p,e);f.yaw=w.from.yaw+(w.to.yaw-w.from.yaw)*e;f.pitch=w.from.pitch+(w.to.pitch-w.from.pitch)*e;
-      f.fov=f.fovTo=w.from.fov+(w.to.fov-w.from.fov)*e;if(t>=1)f.tw=null}
-    else if(Math.abs(f.fovTo-f.fov)>.01)f.fov+=(f.fovTo-f.fov)*Math.min(1,dt*12);else f.fov=f.fovTo;
-    const K=this.keys;if(K.size){f.tw=null;const has=(...a)=>a.some(k=>K.has(k));
-      const v=new THREE.Vector3((has('KeyD','ArrowRight')?1:0)-(has('KeyA','ArrowLeft')?1:0),(has('KeyE','PageUp')?1:0)-(has('KeyQ','PageDown')?1:0),(has('KeyS','ArrowDown')?1:0)-(has('KeyW','ArrowUp')?1:0));
-      if(v.lengthSq()){const sp=(K.has('ShiftLeft')||K.has('ShiftRight')?24:8)*dt;const up=v.y;v.y=0;v.applyQuaternion(c.quaternion);v.y+=up;c.position.addScaledVector(v.normalize(),sp)}}
-    this._applyFly()}
+  _exitWalk(){this.walk=null;this.keys.clear();this.look.id=this.look.pinch=null;this.controls.enabled=true;this.camera.rotation.order='XYZ';
+    if(this.body)this.body.visible=false;this.zoomUI.hidden=this.artUI.hidden=this.joyUI.hidden=true;this.joy.x=this.joy.y=0}
+  backToBoard(){this.setCamMode('Player');this.onCamChange&&this.onCamChange('Player')}
+  // obstacles (x0,x1,z0,z1): the chess table, the altar steps, the two halves of the marble screen
+  get _boxes(){if(!this._bx){const S=2.6,HW=ROOM.W/2,HL=ROOM.L/2,az=-HL+3.2*S-.4,tz=HL-14.5*S;
+    this._bx=[[-12,12,-8,8],[-4*S,4*S,az-1.7*S,az+1.7*S],[1.6*S,HW,tz-.25*S,tz+.25*S],[-HW,-1.6*S,tz-.25*S,tz+.25*S]]}return this._bx}
+  _collide(p){const S=2.6,r=.3*S,M=.35*S,X=ROOM.W/2-M,Z=ROOM.L/2-M,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+    for(const [x0,x1,z0,z1] of this._boxes){const cx=cl(p.x,x0,x1),cz=cl(p.z,z0,z1),dx=p.x-cx,dz=p.z-cz,d=Math.hypot(dx,dz);if(d>=r)continue;
+      if(d>1e-6){p.x=cx+dx/d*r;p.z=cz+dz/d*r}
+      else{const o=[p.x-x0,x1-p.x,p.z-z0,z1-p.z],i=o.indexOf(Math.min(...o));if(i===0)p.x=x0-r;else if(i===1)p.x=x1+r;else if(i===2)p.z=z0-r;else p.z=z1+r}}
+    p.x=cl(p.x,-X,X);p.z=cl(p.z,-Z,Z);return p}
+  _route(a,b){ // go around the table / altar steps instead of through them
+    const pts=[a.clone()],r=.3*2.6+.4;
+    for(const [x0,x1,z0,z1] of this._boxes.slice(0,2)){const A=pts[pts.length-1];
+      if(!segBox(A,b,x0-r,x1+r,z0-r,z1+r))continue;
+      const side=A.x>=x1?1:A.x<=x0?-1:b.x>=x1?1:b.x<=x0?-1:(A.x+b.x>=0?1:-1),lx=side>0?x1+r+.05:x0-r-.05;
+      pts.push(new THREE.Vector3(lx,0,A.z),new THREE.Vector3(lx,0,b.z))}
+    pts.push(b.clone());return pts}
+  walkToArt(id){const w=this.walk;if(!w)return;const o=this.room.artworks().find(a=>a.id===id);if(!o)return;
+    const S=2.6,EYE=ROOM.y0+1.65*S,up=o.pitch>1;let p;
+    if(up)p=new THREE.Vector3(o.c.x,0,o.id==='ceiling'?-20:o.c.z);
+    else if(o.n.z)p=new THREE.Vector3(o.c.x,0,o.c.z+(o.id==='christ'?5.6:13)*S);
+    else p=new THREE.Vector3(o.c.x+o.n.x*4.5*S,0,o.c.z);
+    this._collide(p);
+    const dx=o.c.x-p.x,dz=o.c.z-p.z,hd=Math.hypot(dx,dz),dist=Math.hypot(hd,o.c.y-EYE);
+    let yaw=up?o.yaw:Math.atan2(-dx,-dz),pitch=up?THREE.MathUtils.degToRad(89):Math.atan2(o.c.y-EYE,hd);
+    let dy=yaw-w.yawT;dy=Math.atan2(Math.sin(dy),Math.cos(dy));yaw=w.yawT+dy; // shortest turn, yaw stays continuous
+    const aH=2*Math.atan(o.h/2/dist),aW=2*Math.atan(o.w/2/dist),need=Math.min(Math.max(aH,2*Math.atan(Math.tan(aW/2)/this.camera.aspect))*1.12,aH*2.2); // frame the whole piece, or its height on narrow screens
+    w.fovTo=THREE.MathUtils.clamp(THREE.MathUtils.radToDeg(need),15,75);
+    const path=this._route(w.pos,p),L=[0];for(let i=1;i<path.length;i++)L.push(L[i-1]+path[i].distanceTo(path[i-1]));
+    const len=L[L.length-1];
+    w.glide={path,L,len,t0:performance.now(),dur:THREE.MathUtils.clamp(600+len*28,700,3200),y0:w.yawT,y1:yaw,p0:w.pitchT,p1:pitch};
+    this.room.wantHD(o.id==='christ'?'judgement':o.id)}
+  _walkStep(now){const w=this.walk,c=this.camera,S=2.6,dt=Math.min(.05,(now-(this._lastT||now))/1000);
+    if(w.glide){const g=w.glide,t=Math.min(1,Math.max(0,(now-g.t0)/g.dur)),e=easeIO(t),s=e*g.len;
+      let i=1;while(i<g.L.length-1&&g.L[i]<s)i++;const seg=g.L[i]-g.L[i-1]||1;w.pos.lerpVectors(g.path[i-1],g.path[i],Math.min(1,(s-g.L[i-1])/seg));
+      w.yawT=g.y0+(g.y1-g.y0)*e;w.pitchT=g.p0+(g.p1-g.p0)*e;w.vel.set(0,0,0);if(t>=1)w.glide=null}
+    // input: joystick + keys (forward = -y on the stick)
+    const K=this.keys,has=(...a)=>a.some(k=>K.has(k));
+    let ix=this.joy.x+(has('KeyD','ArrowRight')?1:0)-(has('KeyA','ArrowLeft')?1:0),iz=this.joy.y+(has('KeyS','ArrowDown')?1:0)-(has('KeyW','ArrowUp')?1:0);
+    const il=Math.hypot(ix,iz);if(il>1){ix/=il;iz/=il}
+    if(il>.01)w.glide=null;
+    if(!w.glide){const sp=1.6*S*(has('ShiftLeft','ShiftRight')?2.2:1),sy=Math.sin(w.yaw),cy=Math.cos(w.yaw);
+      const tx=(cy*ix+sy*iz)*sp,tz=(-sy*ix+cy*iz)*sp,k=1-Math.exp(-dt*9);
+      w.vel.x+=(tx-w.vel.x)*k;w.vel.z+=(tz-w.vel.z)*k;w.pos.addScaledVector(w.vel,dt);this._collide(w.pos)}
+    // smoothed look
+    const lk=1-Math.exp(-dt*20);w.yaw+=(w.yawT-w.yaw)*lk;w.pitch+=(w.pitchT-w.pitch)*lk;
+    w.fov+=(w.fovTo-w.fov)*(1-Math.exp(-dt*12));if(Math.abs(w.fovTo-w.fov)<.01)w.fov=w.fovTo;
+    // gait: subtle head-bob and leg swing
+    const spd=Math.hypot(w.vel.x,w.vel.z),amt=Math.min(1,spd/(1.6*S));w.phase+=dt*spd*2.2;
+    c.position.set(w.pos.x,ROOM.y0+1.65*S+Math.sin(w.phase*2)*.018*S*amt,w.pos.z);c.rotation.set(w.pitch,w.yaw,0,'YXZ');
+    if(c.fov!==w.fov){c.fov=w.fov;c.updateProjectionMatrix()}
+    const b=this.body;b.position.set(w.pos.x,ROOM.y0,w.pos.z);b.rotation.y=w.yaw;
+    this.legs[0].rotation.x=Math.sin(w.phase)*.45*amt;this.legs[1].rotation.x=-Math.sin(w.phase)*.45*amt;
+    // hi-res fresco for whatever the pilgrim is standing near
+    if(now-w.hdT>500){w.hdT=now;let best=null,bd=12*S;for(const o of this.room.artworks()){if(o.pitch>1||o.id==='christ')continue;const d=Math.hypot(o.c.x-w.pos.x,o.c.z-w.pos.z)-(o.id==='judgement'?6*S:0);if(d<bd){bd=d;best=o}}if(best)this.room.wantHD(best.id)}}
   _buildBoard(imgs){
     const {W,H}=BOARD;
     const ppu=this.mobile?128:160;
@@ -255,9 +315,9 @@ export class ChessScene{
   }
   setCamMode(m){this.camMode=m;localStorage.setItem('camMode',m);this.setView(this.view.side)}
   setView(side,animate=true){
-    this.view.side=side;const m0=this.camMode;const free=this.camMode==='Free',c=this.controls;
-    if(free){if(!this.fly)this._enterFree();return} // free cam stays exactly where the player leaves it
-    if(this.fly)this._exitFree();
+    this.view.side=side;const m0=this.camMode;const c=this.controls;
+    if(this.camMode==='Walk'){if(!this.walk)this._enterWalk();return} // the pilgrim stays exactly where they are left
+    if(this.walk)this._exitWalk();
     c.enableRotate=false;c.enablePan=false;c.zoomToCursor=false;c.minDistance=5;c.maxDistance=42;c.maxPolarAngle=1.4;
     c.target.set(0,0.3,0);const fov=m0==='Player'?48:m0==='Side'?58:36;this.camera.fov=fov;this._offset();
     const {r,polar}=this._fit();
@@ -272,30 +332,32 @@ export class ChessScene{
   _offset(){const c=this.camera,el=this.renderer.domElement,w=el.clientWidth||1,h=el.clientHeight||1;if(this.camMode==='Player'&&c.aspect<1)c.setViewOffset(w,h,0,-h*.27,w,h);else c.clearViewOffset();c.updateProjectionMatrix()}
   introSweep(){}
   _applySph(s){this._placed=true;const v=new THREE.Vector3().setFromSphericalCoords(s.r,s.phi,s.theta);this.camera.position.copy(this.controls.target).add(v);this.camera.lookAt(this.controls.target);this.controls.update()}
-  resize(){const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);this.renderer.domElement.style.width=w+'px';this.renderer.domElement.style.height=h+'px';this.camera.aspect=w/h;this._offset();if(!this.fly&&!this.userOrbit&&!this.camTween&&this.view)this.setView(this.view.side,false)}
+  resize(){const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);this.renderer.domElement.style.width=w+'px';this.renderer.domElement.style.height=h+'px';this.camera.aspect=w/h;this._offset();if(!this.walk&&!this.userOrbit&&!this.camTween&&this.view)this.setView(this.view.side,false)}
   // ---------- input ----------
   _bindInput(){
-    const el=this.renderer.domElement;let down=null;const pts=new Map();this.keys=new Set();
-    const geo=()=>{const a=[...pts.values()];if(a.length<2)return null;return {x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2,d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)}};
+    const el=this.renderer.domElement;let down=null;const pts=new Map();this.keys=new Set();this.look={};
+    const L=this.look,pd=()=>{const a=pts.get(L.id),b=pts.get(L.pinch);return a&&b?Math.hypot(a.x-b.x,a.y-b.y):0};
     el.addEventListener('pointerdown',e=>{if(e.isPrimary)pts.clear();pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
       down=pts.size>1?null:{x:e.clientX,y:e.clientY,t:performance.now(),id:e.pointerId}; // no taps from multi-touch gestures
-      if(this.fly){this.fly.tw=null;try{el.setPointerCapture(e.pointerId)}catch(_){}}});
+      if(!this.walk)return;this.walk.glide=null;try{el.setPointerCapture(e.pointerId)}catch(_){}
+      if(L.id==null||!pts.has(L.id)){L.id=e.pointerId;L.pinch=null}
+      else if(L.pinch==null){L.pinch=e.pointerId;L.d0=pd();L.f0=this.walk.fovTo}});
     el.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(!p)return;
-      const g0=geo(),dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;if(!this.fly)return;
-      if(pts.size===1){if(e.pointerType==='mouse'&&(e.buttons&6))this._flyPan(dx,dy);else this._flyLook(dx,dy)}
-      else{const g1=geo();if(!g0||!g0.d)return;this._flyPan((g1.x-g0.x),(g1.y-g0.y));
-        const r=THREE.MathUtils.clamp(g1.d/g0.d,.5,2);this._flyDolly(Math.max(this._focusDist(),2)*(1-1/r))}});
-    const up=e=>{pts.delete(e.pointerId)};
+      const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;const w=this.walk;if(!w)return;
+      if(L.pinch!=null){if(L.d0>0){const d=pd();if(d>0)w.fovTo=THREE.MathUtils.clamp(L.f0*L.d0/d,15,75)}return} // pinch = optical zoom
+      if(e.pointerId!==L.id)return;
+      const k=.0052*(w.fov/70); // finer look when zoomed in
+      w.yawT-=dx*k;w.pitchT=THREE.MathUtils.clamp(w.pitchT-dy*k,THREE.MathUtils.degToRad(-85),THREE.MathUtils.degToRad(89))});
+    const up=e=>{pts.delete(e.pointerId);if(e.pointerId===L.pinch)L.pinch=null;else if(e.pointerId===L.id){L.id=L.pinch!=null?L.pinch:null;L.pinch=null}};
     el.addEventListener('pointerup',e=>{up(e);if(!down||down.id!==e.pointerId){down=null;return}const dx=e.clientX-down.x,dy=e.clientY-down.y;
       if(Math.hypot(dx,dy)<10&&performance.now()-down.t<600){const sq=this.pick(e.clientX,e.clientY);if(sq)this.onTap(sq)}down=null});
     el.addEventListener('pointercancel',e=>{up(e);down=null});
-    el.addEventListener('wheel',e=>{if(!this.fly)return;e.preventDefault();const f=this.fly,dy=e.deltaMode===1?e.deltaY*33:e.deltaY;
-      if(e.ctrlKey||e.shiftKey||e.altKey)f.fovTo=THREE.MathUtils.clamp(f.fovTo*Math.exp(dy*.0025),10,75); // trackpad pinch / modifier + wheel = optical zoom
-      else this._flyDolly(-THREE.MathUtils.clamp(dy,-300,300)*.0015*Math.max(this._focusDist(),2))},{passive:false});
-    el.addEventListener('contextmenu',e=>{if(this.fly)e.preventDefault()});
-    const MOVE=['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown','ShiftLeft','ShiftRight'];
-    window.addEventListener('keydown',e=>{if(!this.fly||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||''))return;
-      if(MOVE.includes(e.code)){this.keys.add(e.code);if(e.code.startsWith('Arrow')||e.code.startsWith('Page'))e.preventDefault()}
+    el.addEventListener('wheel',e=>{if(!this.walk)return;e.preventDefault();const dy=e.deltaMode===1?e.deltaY*33:e.deltaY;
+      this.walk.fovTo=THREE.MathUtils.clamp(this.walk.fovTo*Math.exp(THREE.MathUtils.clamp(dy,-300,300)*.0025),15,75)},{passive:false});
+    el.addEventListener('contextmenu',e=>{if(this.walk)e.preventDefault()});
+    const MOVE=['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'];
+    window.addEventListener('keydown',e=>{if(!this.walk||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||''))return;
+      if(MOVE.includes(e.code)){this.keys.add(e.code);if(e.code.startsWith('Arrow'))e.preventDefault()}
       else if(e.key==='+'||e.key==='=')this.zoom(.8);else if(e.key==='-')this.zoom(1.25)});
     window.addEventListener('keyup',e=>this.keys.delete(e.code));
     window.addEventListener('blur',()=>this.keys.clear());
@@ -313,7 +375,7 @@ export class ChessScene{
   }
   squareToScreen(sq){const p=sqPos(sq).project(this.camera);const rc=this.renderer.domElement.getBoundingClientRect();return {x:rc.left+(p.x+1)/2*rc.width,y:rc.top+(1-p.y)/2*rc.height}}
   _tick(now){
-    if(!this.fly&&this.camTween){const c=this.camTween;const t=Math.min(1,Math.max(0,(now-c.t0)/c.dur));const e=easeIO(t);
+    if(!this.walk&&this.camTween){const c=this.camTween;const t=Math.min(1,Math.max(0,(now-c.t0)/c.dur));const e=easeIO(t);
       this._applySph({r:c.from.r+(c.to.r-c.from.r)*e,phi:c.from.phi+(c.to.phi-c.from.phi)*e,theta:c.from.theta+(c.to.theta-c.from.theta)*e});if(t>=1)this.camTween=null}
     const list=this.tweens;this.tweens=[];const keep=[];
     for(const tw of list){const t=Math.min(1,(now-tw.t0)/tw.dur);
@@ -321,7 +383,7 @@ export class ChessScene{
       else{const e=easeIO(t);tw.obj.position.lerpVectors(tw.from,tw.to,e);tw.obj.position.y=tw.from.y+(tw.to.y-tw.from.y)*e+Math.sin(Math.PI*t)*tw.hop}
       if(t>=1){tw.done&&tw.done()}else keep.push(tw)}
     const fresh=this.tweens;this.tweens=keep.filter(k=>!fresh.some(f=>f.obj===k.obj)).concat(fresh);
-    if(this.fly)this._flyStep(now);else this.controls.update();
+    if(this.walk)this._walkStep(now);else this.controls.update();
     this._lastT=now;
     this.renderer.render(this.scene,this.camera);
   }

@@ -4,7 +4,7 @@
 - Board engraving, side panels (Chi-Rho/IHS and St Benedict medal), wood textures, Staunton pieces, sounds — procedural, made for this game.
 - Game code — GPLv3 (LICENSE).
 
-- Sistine Chapel art (assets/sistine/), via Wikimedia Commons, resized/recompressed:
+- Sistine Chapel art (assets/sistine/; larger copies of the Last Judgement and six wall frescoes in assets/sistine/hd/, loaded only near that artwork), via Wikimedia Commons, resized/recompressed:
   - The Sistine Chapel ceiling — Michelangelo, 1508–12. Fresco public domain; composite photo CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:CAPPELLA_SISTINA_Ceiling.jpg
   - The Last Judgement — Michelangelo, 1536–41. Public domain. https://commons.wikimedia.org/wiki/File:Last_Judgement_(Michelangelo).jpg
   - The Baptism of Christ — Pietro Perugino, 1482. Public domain. https://commons.wikimedia.org/wiki/File:Pietro_Perugino_-_Baptism_of_Christ_-_Sistine_Chapel_-_cat13a.jpg
