@@ -1,7 +1,8 @@
 import { Chess } from '../vendor/chess.js?v=2';
-import { ChessScene } from './scene.js?v=5';
-import * as AI from './ai.js?v=5';
-import { play, setSound, unlockAudio } from './sound.js?v=5';
+import { ChessScene } from './scene.js?v=6';
+import { SETTINGS } from './scenery.js?v=6';
+import * as AI from './ai.js?v=6';
+import { play, setSound, unlockAudio } from './sound.js?v=6';
 
 const $=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
@@ -29,7 +30,7 @@ const saveS=()=>lsSet('cc_settings',JSON.stringify(S));
 // ---------- state ----------
 let game=new Chess(),human='w',over=null,selected=null,targets=[],pendingPromo=null,thinking=false,clocks=null,clockTimer=null,lastTick=0,started=false,resignArm=0,drawOffer=null,aiToken=0,menuOpen=false,current=null;
 const scene=new ChessScene($('stage'),{onTap:onSquare});
-scene.fast=FAST;
+scene.fast=FAST;scene.settingId=S.setting||'basilica';
 scene.onCapture=()=>{};
 
 function opponentName(){if(current.mode==='campaign')return LADDER[current.level-1].name;if(current.mode==='ai')return DIFFS[current.diff-1].name;return ''}
@@ -245,6 +246,7 @@ function renderMenu(){
   chips($('mMode'),[['ai','vs Computer'],['2p','2 Players'],['campaign','Campaign']],S.mode,v=>{S.mode=v;saveS()});
   chips($('mDiff'),DIFFS.map((d,i)=>[i+1,d.name]),S.diff,v=>{S.diff=+v;saveS()});
   chips($('mColor'),[['w','White'],['b','Black'],['r','Random']],S.color,v=>{S.color=v;saveS()});
+  chips($('mSet'),SETTINGS.map(x=>[x.id,x.name]),S.setting||'basilica',v=>{S.setting=v;saveS();scene.setSetting(v)});
   chips($('mClock'),[[0,'None'],[5,'5 min'],[10,'10 min'],[15,'15 min']],S.clock,v=>{S.clock=+v;saveS()});
   chips($('mRot'),[['1','On'],['0','Off']],S.rotate?'1':'0',v=>{S.rotate=v==='1';saveS()});
   $('secDiff').hidden=S.mode!=='ai';$('secColor').hidden=S.mode==='2p';$('secRot').hidden=S.mode!=='2p';$('secCamp').hidden=S.mode!=='campaign';
@@ -271,7 +273,7 @@ scene.init().then(()=>{
 });
 
 // test hooks
-window.CC={
+window.CC={_scene:scene,
   get fen(){return game.fen()},get over(){return over},get thinking(){return thinking},get turn(){return game.turn()},get human(){return human},
   get history(){return game.history()},get busy(){return scene.busy},get view(){return scene.view.side},
   tap:onSquare,screen:sq=>scene.squareToScreen(sq),start:(o)=>{Object.assign(S,o);startGame()},

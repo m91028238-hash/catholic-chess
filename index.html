@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<link rel="icon" href="data:,">
 <meta name="theme-color" content="#2a1a10">
 <meta name="description" content="3D chess on an engraved wooden board with crosses and saints. Play the computer, a friend, or climb the campaign ladder.">
 <title>Catholic Chess</title>
-<link rel="stylesheet" href="css/style.css?v=5">
-<script type="importmap">{"imports":{"three":"./vendor/three.bundle.min.js?v=5"}}</script>
+<link rel="stylesheet" href="css/style.css?v=6">
+<script type="importmap">{"imports":{"three":"./vendor/three.bundle.min.js?v=6"}}</script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="15ec783e-8882-42d9-b43b-fefd064bbe24"></script>
 </head>
 <body>
@@ -40,22 +41,36 @@
   <div class="mwrap">
     <a class="home" href="https://m91028238-hash.github.io/catholic-mini-games/">‹ Catholic Games</a>
     <h1>Catholic Chess</h1>
-    <p class="sub">An engraved wooden board, ivory and oxblood pieces, in St Peter’s Basilica.</p>
+    <p class="sub">An engraved wooden board, ivory and oxblood pieces, inside real 360° photographs of St Peter’s Basilica and other holy places.</p>
     <div class="sec"><h3>Mode</h3><div id="mMode" class="chips"></div></div>
     <div class="sec" id="secDiff"><h3>Difficulty</h3><div id="mDiff" class="chips"></div></div>
     <div class="sec" id="secCamp"><h3>Campaign ladder</h3><div id="mCamp" class="ladder"></div></div>
     <div class="sec" id="secColor"><h3>Play as</h3><div id="mColor" class="chips"></div></div>
     <div class="sec" id="secRot"><h3>Turn the board to the side to move</h3><div id="mRot" class="chips"></div></div>
+    <div class="sec"><h3>Setting</h3><div id="mSet" class="chips"></div></div>
     <div class="sec"><h3>Clock (each side)</h3><div id="mClock" class="chips"></div></div>
     <div class="row big"><button id="mStart">Start game</button><button id="mResume" class="ghost" hidden>Resume</button></div>
     <details class="credits"><summary>How to play</summary>
-      <p>Tap a piece to see its legal moves, then tap a dot to move. Pinch to zoom; the “Camera” button cycles Player, Top, Side and Free views (in Free, drag to rotate, two-finger drag or right-drag to pan, pinch, wheel or the + and − buttons to zoom from the board out to the whole basilica). Win a campaign game to unlock the next opponent; you can replay any unlocked level.</p>
+      <p>Tap a piece to see its legal moves, then tap a dot to move. Pinch to zoom; the “Camera” button cycles Player, Top, Side and Free views (in Free, drag to rotate, two-finger drag or right-drag to pan, pinch, wheel or the + and − buttons to zoom; drag up to look all the way up at the vault and dome). Win a campaign game to unlock the next opponent; you can replay any unlocked level.</p>
+    </details>
+    <details class="credits" id="imgcredits"><summary>Image credits</summary>
+      <ul>
+        <li><b>St Peter’s Basilica (nave, baldacchino and dome)</b> — 360° photo “<a href="https://commons.wikimedia.org/wiki/File:Mapillary_(mapconcierge)_2025-04-21_12H54M23S999_(1067034728570044_at_nAKMjrLGkb8tw5o3lFJNaB_with_RICOH_RICOH_THETA_X).jpg">Mapillary (mapconcierge) 2025-04-21 12H54M23S999 (1067034728570044 at nAKMjrLGkb8tw5o3lFJNaB with RICOH RICOH THETA X).jpg</a>” by mapconcierge (Mapillary), via Wikimedia Commons, licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Resized and recompressed for this game.</li>
+        <li><b>St Peter’s portico</b> — 360° photo “<a href="https://commons.wikimedia.org/wiki/File:Mapillary_(mapconcierge)_2025-04-21_12H51M19S510_(1042453797777364_at_nAKMjrLGkb8tw5o3lFJNaB_with_RICOH_RICOH_THETA_X).jpg">Mapillary (mapconcierge) 2025-04-21 12H51M19S510 (1042453797777364 at nAKMjrLGkb8tw5o3lFJNaB with RICOH RICOH THETA X).jpg</a>” by mapconcierge (Mapillary), via Wikimedia Commons, licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Resized and recompressed for this game.</li>
+        <li><b>St Peter’s Square</b> — 360° photo “<a href="https://commons.wikimedia.org/wiki/File:Mapillary_(mapconcierge)_2025-04-21_12H50M37S515_(1564146424280132_at_nAKMjrLGkb8tw5o3lFJNaB_with_RICOH_RICOH_THETA_X).jpg">Mapillary (mapconcierge) 2025-04-21 12H50M37S515 (1564146424280132 at nAKMjrLGkb8tw5o3lFJNaB with RICOH RICOH THETA X).jpg</a>” by mapconcierge (Mapillary), via Wikimedia Commons, licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Resized and recompressed for this game.</li>
+        <li><b>Gethsemane, Church of All Nations (Basilica of the Agony), Jerusalem</b> — 360° photo “<a href="https://commons.wikimedia.org/wiki/File:PikiWiki_Israel_70558_gat_shemanim_church.jpg">PikiWiki Israel 70558 gat shemanim church.jpg</a>” by Zeev Stein (PikiWiki – Israel free image collection), via Wikimedia Commons, licensed <a href="https://creativecommons.org/licenses/by/2.5/">CC BY 2.5</a>. Resized and recompressed for this game.</li>
+        <li><b>The Transfiguration</b> — Raphael, 1516–20. Public domain (photograph of a public-domain work), <a href="https://commons.wikimedia.org/wiki/File:Transfiguration_Raphael.jpg">Wikimedia Commons</a>.</li>
+        <li><b>Delivery of the Keys</b> — Pietro Perugino, 1481–82, Sistine Chapel. Public domain (photograph of a public-domain work), <a href="https://commons.wikimedia.org/wiki/File:Perugino_-_Entrega_de_las_llaves_a_San_Pedro_(Capilla_Sixtina,_1481-82).jpg">Wikimedia Commons</a>.</li>
+        <li><b>Crucifixion of St Peter</b> — Caravaggio, 1601. Public domain (photograph of a public-domain work), <a href="https://commons.wikimedia.org/wiki/File:Crucifixion_of_Saint_Peter-Caravaggio_(c.1600).jpg">Wikimedia Commons</a>.</li>
+        <li><b>The Sistine Madonna</b> — Raphael, 1512. Public domain (photograph of a public-domain work), <a href="https://commons.wikimedia.org/wiki/File:Raphael_-_The_Sistine_Madonna_-_Google_Art_Project.jpg">Wikimedia Commons</a>.</li>
+        <li><b>The Creation of Adam</b> — Michelangelo, c. 1512, Sistine Chapel ceiling. Public domain (photograph of a public-domain work), <a href="https://commons.wikimedia.org/wiki/File:Michelangelo_-_Creation_of_Adam_(cropped).jpg">Wikimedia Commons</a>.</li>
+      </ul>
     </details>
     <details class="credits" id="credits"><summary>Credits &amp; licences</summary>
       <ul>
         <li><b>three.js</b> r186 — MIT licence, © three.js authors.</li>
         <li><b>chess.js</b> 1.4.0 — BSD 2-Clause, © Jeff Hlywa. Rules, check, mate, draws.</li>
-        <li><b>St Peter’s Basilica scenery and mosaic panels</b> — procedural geometry and canvas painting made for this game.</li>
+        <li><b>Surroundings and paintings</b> — real photographs; see Image credits above. Marble table, easels, frames and plaques are procedural.</li>
         <li><b>Board, pieces, wood textures and sounds</b> — made procedurally for this game (lathe-turned Staunton pieces, sculpted knight, synthesised wood clicks).</li>
         <li><b>Side panels</b> (Christ: Chi-Rho, IHS; St Benedict medal) — procedural engraving made for this game, inspired by a real laser-engraved board.</li>
         <li>This game’s own code is released under GPLv3. See ASSETS.md in the repository.</li>
@@ -63,6 +78,6 @@
     </details>
   </div>
 </div>
-<script type="module" src="js/main.js?v=5"></script>
+<script type="module" src="js/main.js?v=6"></script>
 </body>
 </html>

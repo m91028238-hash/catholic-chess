@@ -1,9 +1,10 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=5';
-import { pieceGeometries } from './pieces.js?v=5';
-import { buildBasilica, buildPlinth, BOUNDS } from './basilica.js?v=5';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=6';
+import { pieceGeometries } from './pieces.js?v=6';
+import { buildPlinth } from './basilica.js?v=6';
+import { Scenery } from './scenery.js?v=6';
 
 const TOP=0.32;
 const FILES='abcdefgh';
@@ -17,27 +18,27 @@ export class ChessScene{
     this.mobile=mobile;
     const r=this.renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:true});
     r.setPixelRatio(Math.min(window.devicePixelRatio||1,mobile?2:2));
-    r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;
+    r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFShadowMap;
     r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=.92;r.outputColorSpace=THREE.SRGBColorSpace;
     host.appendChild(r.domElement);
     const sc=this.scene=new THREE.Scene();
-    sc.background=new THREE.Color(0x3a2a1c);sc.fog=new THREE.Fog(0x4a3826,60,260);
+    sc.background=new THREE.Color(0x3a2a1c);
     const pm=new THREE.PMREMGenerator(r);this.env=sc.environment=pm.fromScene(new RoomEnvironment(),0.04).texture;sc.environmentIntensity=0.45;
     this.camera=new THREE.PerspectiveCamera(36,1,0.1,420);
     const ctl=this.controls=new OrbitControls(this.camera,r.domElement);
     ctl.enableDamping=true;ctl.dampingFactor=.12;ctl.enablePan=false;ctl.minDistance=5;ctl.maxDistance=42;
-    ctl.enableRotate=(localStorage.getItem('camMode')==='Free');ctl.maxPolarAngle=1.4;ctl.minPolarAngle=0;this.camMode=localStorage.getItem('camMode')||'Player';ctl.target.set(0,0.3,0);ctl.rotateSpeed=.7;
+    ctl.enableRotate=(localStorage.getItem('camMode')==='Free');ctl.maxPolarAngle=1.4;ctl.minPolarAngle=0.02;this.camMode=localStorage.getItem('camMode')||'Player';ctl.target.set(0,0.3,0);ctl.rotateSpeed=.7;
     ctl.addEventListener('start',()=>{this.userOrbit=true;this.camTween=null});
     // lights
-    sc.add(new THREE.HemisphereLight(0xfff0dc,0x5a4028,0.5));
-    const d=this.sun=new THREE.DirectionalLight(0xffe4b8,2.0);d.position.set(5,14,7);d.castShadow=true;
-    const S=d.shadow;S.mapSize.set(mobile?1024:2048,mobile?1024:2048);S.camera.left=-11;S.camera.right=11;S.camera.top=8;S.camera.bottom=-8;S.camera.near=4;S.camera.far=30;S.bias=-0.0004;S.normalBias=0.02;S.radius=4;
+    sc.add(new THREE.HemisphereLight(0xfff0dc,0x6a5038,0.75));
+    const d=this.sun=new THREE.DirectionalLight(0xffe4b8,1.5);d.position.set(5,14,7);d.castShadow=true;
+    const S=d.shadow;S.mapSize.set(mobile?1024:2048,mobile?1024:2048);S.camera.left=-11;S.camera.right=11;S.camera.top=8;S.camera.bottom=-8;S.camera.near=4;S.camera.far=30;S.bias=-0.0004;S.normalBias=0.02;S.radius=6;
     sc.add(d);
     const fill=new THREE.PointLight(0xffb070,18,40,1.6);fill.position.set(-8,6,-6);sc.add(fill);
     this.markers=new THREE.Group();sc.add(this.markers);
     this.graveSlots={w:0,b:0};
     buildPlinth(sc,{env:this.env});
-    this.basilica=buildBasilica(sc,{env:this.env,mobile});
+    this.scenery=new Scenery(sc,r,{mobile});
     this._buildZoomUI();
     this.ray=new THREE.Raycaster();
     this._bindInput();
@@ -51,7 +52,10 @@ export class ChessScene{
     const ben=null,chr=null; // panels are drawn procedurally (see textures.js panelArt)
     this._buildBoard({benedict:ben,christ:chr});
     this._buildMaterials();
+    this.setSetting(this.settingId||'basilica');
+    setTimeout(()=>this.scenery.buildArt(this.env),300); // lazy: after the board is up
   }
+  setSetting(id){this.settingId=id;return this.scenery.set(id).catch(e=>console.warn('panorama',e))}
   _buildZoomUI(){
     const w=this.zoomUI=document.createElement('div');w.className='zoomui';w.hidden=true;
     w.innerHTML='<button aria-label="Zoom in" data-z="0.7">+</button><button aria-label="Zoom out" data-z="1.43">−</button>';
@@ -191,7 +195,7 @@ export class ChessScene{
   _fit(){
     const a=this.camera.aspect;const vf=THREE.MathUtils.degToRad(this.camera.fov);const hf=2*Math.atan(Math.tan(vf/2)*a);
     const portrait=a<1;const m=this.camMode;
-    const polar=m==='Top'?0.001:m==='Side'?1.15:0.87;
+    const polar=m==='Top'?0.001:m==='Side'?1.15:1.08;
     const wfit=m==='Top'?(portrait?8.6:12):m==='Side'?(portrait?11.5:19.2):(portrait?9.3:19.2);
     const dW=(wfit/2)/Math.tan(hf/2)+(m==='Top'?0:portrait?1.2:0.5);
     const hfit=m==='Top'?(portrait?0:11):11*Math.cos(polar)+1.6*Math.sin(polar);
@@ -200,9 +204,9 @@ export class ChessScene{
   }
   setCamMode(m){this.camMode=m;localStorage.setItem('camMode',m);this.setView(this.view.side)}
   setView(side,animate=true){
-    this.view.side=side;const free=this.camMode==='Free',c=this.controls;c.enableRotate=free;c.enablePan=free;c.zoomToCursor=free;
-    c.minDistance=free?1.6:5;c.maxDistance=free?95:42;c.maxPolarAngle=free?1.75:1.4;c.panSpeed=1.2;
-    if(!free||!this._wasFree)c.target.set(0,0.3,0);this._wasFree=free;if(this.zoomUI)this.zoomUI.hidden=!free;const fov=free?55:36;if(this.camera.fov!==fov){this.camera.fov=fov;this.camera.updateProjectionMatrix()}
+    this.view.side=side;const m0=this.camMode;const free=this.camMode==='Free',c=this.controls;c.enableRotate=free;c.enablePan=free;c.zoomToCursor=free;
+    c.minDistance=free?1.6:5;c.maxDistance=free?34:42;c.maxPolarAngle=free?Math.PI-0.02:1.4;c.panSpeed=1.2;
+    if(!free||!this._wasFree)c.target.set(0,0.3,0);this._wasFree=free;if(this.zoomUI)this.zoomUI.hidden=!free;const fov=free?60:(m0==='Player'?44:36);this.camera.fov=fov;this._offset();
     const {r,polar}=this._fit();
     const theta=(side==='w'?0:Math.PI)+(this.camMode==='Side'?Math.PI/2:0);
     const target={r,phi:polar,theta};
@@ -212,9 +216,10 @@ export class ChessScene{
     let dt=theta-cur.theta;while(dt>Math.PI)dt-=2*Math.PI;while(dt<-Math.PI)dt+=2*Math.PI;
     this.camTween={from:{r:cur.radius,phi:cur.phi,theta:cur.theta},to:{r,phi:polar,theta:cur.theta+dt},t0:performance.now(),dur:400};
   }
+  _offset(){const c=this.camera,el=this.renderer.domElement,w=el.clientWidth||1,h=el.clientHeight||1;if(this.camMode==='Player'&&c.aspect<1)c.setViewOffset(w,h,0,-h*.2,w,h);else c.clearViewOffset();c.updateProjectionMatrix()}
   introSweep(){}
   _applySph(s){const v=new THREE.Vector3().setFromSphericalCoords(s.r,s.phi,s.theta);this.camera.position.copy(this.controls.target).add(v);this.camera.lookAt(this.controls.target);this.controls.update()}
-  resize(){const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);this.renderer.domElement.style.width=w+'px';this.renderer.domElement.style.height=h+'px';this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(!this.userOrbit&&!this.camTween&&this.view)this.setView(this.view.side,false)}
+  resize(){const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);this.renderer.domElement.style.width=w+'px';this.renderer.domElement.style.height=h+'px';this.camera.aspect=w/h;this._offset();if(!this.userOrbit&&!this.camTween&&this.view)this.setView(this.view.side,false)}
   // ---------- input ----------
   _bindInput(){
     const el=this.renderer.domElement;let down=null;
@@ -245,9 +250,13 @@ export class ChessScene{
       if(t>=1){tw.done&&tw.done()}else keep.push(tw)}
     const fresh=this.tweens;this.tweens=keep.filter(k=>!fresh.some(f=>f.obj===k.obj)).concat(fresh);
     this.controls.update();
-    if(this.camMode==='Free'){const p=this.camera.position,t=this.controls.target,B=BOUNDS;
-      p.x=THREE.MathUtils.clamp(p.x,-B.x,B.x);p.y=THREE.MathUtils.clamp(p.y,B.yMin,B.yMax);p.z=THREE.MathUtils.clamp(p.z,B.zMin,B.zMax);
-      t.x=THREE.MathUtils.clamp(t.x,-B.x,B.x);t.y=THREE.MathUtils.clamp(t.y,B.yMin-1,B.yMax);t.z=THREE.MathUtils.clamp(t.z,B.zMin,B.zMax)}
+    if(this.camMode==='Free'){const p=this.camera.position,t=this.controls.target;
+      // keep the eye above the table: when looking up, lift the pivot with the camera so the view turns to the vault/dome
+      const lift=1.4-p.y;if(lift>0){p.y+=lift;t.y+=lift}
+      else if(t.y>0.3&&p.y>t.y){const d=Math.min(t.y-0.3,-lift);p.y-=d;t.y-=d}
+      const R=Math.hypot(t.x,t.z);if(R>16){t.x*=16/R;t.z*=16/R}t.y=Math.min(t.y,30);
+      const Rc=Math.hypot(p.x,p.z);if(Rc>30){p.x*=30/Rc;p.z*=30/Rc}p.y=Math.min(p.y,32)}
+    this.scenery.aim(this.camera,{Player:.38,Side:.3,Top:0}[this.camMode]||0);
     this.renderer.render(this.scene,this.camera);
   }
   get busy(){return this.tweens.length>0}
