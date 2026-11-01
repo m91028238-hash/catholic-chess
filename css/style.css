@@ -59,3 +59,11 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 .zoomui{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px;z-index:5}
 .zoomui[hidden]{display:none}
 .zoomui button{width:38px;height:38px;border-radius:10px;border:1px solid rgba(201,168,108,.6);background:rgba(42,26,16,.78);color:#ffe2a6;font-size:1.3rem;line-height:1}
+.artui{position:absolute;left:8px;right:54px;bottom:8px;display:flex;gap:5px;overflow-x:auto;z-index:5;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:1px}
+.artui::-webkit-scrollbar{display:none}
+.artui[hidden]{display:none}
+.artui button{flex:0 0 auto;white-space:nowrap;font-size:.72rem;padding:5px 10px;border-radius:13px;border:1px solid rgba(201,168,108,.42);background:rgba(42,26,16,.62);color:#e6cf9e;line-height:1.1;box-shadow:none}
+.artui button.tog{color:#c9a86c;border-color:rgba(201,168,108,.3)}
+.artui button.tog::after{content:' ‹'}
+.artui.shut button.tog::after{content:' ›'}
+.artui.shut button:not(.tog){display:none}

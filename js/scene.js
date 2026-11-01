@@ -1,10 +1,10 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=7';
-import { pieceGeometries } from './pieces.js?v=7';
-import { buildPlinth } from './basilica.js?v=7';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=7';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=8';
+import { pieceGeometries } from './pieces.js?v=8';
+import { buildPlinth } from './basilica.js?v=8';
+import { Sistine, ROOM, ceilingAt, VAULT } from './sistine.js?v=8';
 
 const TOP=0.32;
 const FILES='abcdefgh';
@@ -27,7 +27,7 @@ export class ChessScene{
     this.camera=new THREE.PerspectiveCamera(36,1,0.1,420);
     const ctl=this.controls=new OrbitControls(this.camera,r.domElement);
     ctl.enableDamping=true;ctl.dampingFactor=.12;ctl.enablePan=false;ctl.minDistance=5;ctl.maxDistance=42;
-    ctl.enableRotate=(localStorage.getItem('camMode')==='Free');ctl.maxPolarAngle=1.4;ctl.minPolarAngle=0.02;this.camMode=localStorage.getItem('camMode')||'Player';ctl.target.set(0,0.3,0);ctl.rotateSpeed=.7;
+    ctl.enableRotate=false;ctl.maxPolarAngle=1.4;ctl.minPolarAngle=0.02;this.camMode=localStorage.getItem('camMode')||'Player';ctl.target.set(0,0.3,0);ctl.rotateSpeed=.7;
     ctl.addEventListener('start',()=>{this.userOrbit=true;this.camTween=null});
     // lights
     sc.add(new THREE.HemisphereLight(0xfff0dc,0x6a5038,0.75));
@@ -59,10 +59,62 @@ export class ChessScene{
     w.innerHTML='<button aria-label="Zoom in" data-z="0.7">+</button><button aria-label="Zoom out" data-z="1.43">−</button>';
     w.addEventListener('click',e=>{const b=e.target.closest('button');if(b)this.zoom(+b.dataset.z)});
     this.host.appendChild(w);
+    // Free cam: compact quick-jump strip (scrolls sideways), collapsible
+    const a=this.artUI=document.createElement('div');a.className='artui';a.hidden=true;
+    if(localStorage.getItem('artOpen')==='0')a.classList.add('shut');
+    a.innerHTML='<button class="tog" data-k="tog">Artworks</button><button data-k="reset">Reset view</button>'+
+      this.room.artworks().map(o=>`<button data-k="${o.id}">${o.name}</button>`).join('');
+    a.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;
+      if(k==='tog'){a.classList.toggle('shut');localStorage.setItem('artOpen',a.classList.contains('shut')?'0':'1')}
+      else if(k==='reset')this.resetFree();else this.flyToArt(k)});
+    this.host.appendChild(a);
   }
-  zoom(f){const c=this.controls;const cur=new THREE.Spherical().setFromVector3(this.camera.position.clone().sub(c.target));
-    const r=THREE.MathUtils.clamp(cur.radius*f,c.minDistance,c.maxDistance);this.userOrbit=true;
-    this.camTween={from:{r:cur.radius,phi:cur.phi,theta:cur.theta},to:{r,phi:cur.phi,theta:cur.theta},t0:performance.now(),dur:260}}
+  zoom(f){ // Free cam: optical zoom (field of view), down to 10° for fine detail
+    if(!this.fly)return;this.fly.fovTo=THREE.MathUtils.clamp(this.fly.fovTo*f,10,75)}
+  // ---------- free (fly/look) camera ----------
+  _enterFree(){
+    this.controls.enabled=false;this.camTween=null;const c=this.camera;
+    if(!this._placed){c.position.set(0,9,this.view.side==='b'?-17:17);c.lookAt(0,.3,0)}
+    const e=new THREE.Euler().setFromQuaternion(c.quaternion,'YXZ');
+    this.fly={yaw:e.y,pitch:e.x,fov:60,fovTo:60,tw:null};c.rotation.order='YXZ';c.fov=60;this._offset();
+    this.zoomUI.hidden=this.artUI.hidden=false;this._applyFly();
+  }
+  _exitFree(){this.fly=null;this.keys.clear();this.controls.enabled=true;this.camera.rotation.order='XYZ';this.zoomUI.hidden=this.artUI.hidden=true}
+  _homePose(){const s=this.view.side==='b'?-1:1;const p=new THREE.Vector3(0,9,17*s);const d=new THREE.Vector3(0,.3,0).sub(p);
+    return {p,yaw:Math.atan2(-d.x,-d.z),pitch:Math.atan2(d.y,Math.hypot(d.x,d.z)),fov:60}}
+  resetFree(){if(this.fly)this._flyTo(this._homePose())}
+  flyToArt(id){if(!this.fly)return;const o=this.room.artworks().find(a=>a.id===id);if(!o)return;
+    const vf=THREE.MathUtils.degToRad(60)/2,hf=Math.atan(Math.tan(vf)*this.camera.aspect);
+    const whole=Math.max(o.h/2/Math.tan(vf),o.w/2/Math.tan(hf))*1.06,d=Math.min(whole,o.h/2/Math.tan(vf)*1.6);
+    this._flyTo({p:o.c.clone().addScaledVector(o.n,d),yaw:o.yaw,pitch:o.pitch,fov:60})}
+  _flyTo(to){const f=this.fly;to.p=this._clampPos(to.p.clone());
+    let dy=to.yaw-f.yaw;while(dy>Math.PI)dy-=2*Math.PI;while(dy<-Math.PI)dy+=2*Math.PI;
+    const dist=this.camera.position.distanceTo(to.p);
+    f.tw={from:{p:this.camera.position.clone(),yaw:f.yaw,pitch:f.pitch,fov:f.fov},to:{p:to.p,yaw:f.yaw+dy,pitch:to.pitch,fov:to.fov},t0:performance.now(),dur:THREE.MathUtils.clamp(500+dist*14,600,1500)}}
+  _clampPos(p){ // anywhere inside the chapel, ~0.3 m from walls, floor and vault
+    const M=.3*2.6,X=ROOM.W/2-M,Z=ROOM.L/2-M,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+    p.x=cl(p.x,-X,X);p.z=cl(p.z,-Z,Z);p.y=Math.max(p.y,ROOM.y0+M);
+    const dy=p.y-VAULT.YC,r=Math.hypot(p.x,dy),R=VAULT.R-M;if(dy>0&&r>R){p.x*=R/r;p.y=VAULT.YC+dy*R/r}
+    return p}
+  _applyFly(){const f=this.fly,c=this.camera;f.pitch=THREE.MathUtils.clamp(f.pitch,-Math.PI/2+1e-3,Math.PI/2-1e-3);
+    this._clampPos(c.position);c.rotation.set(f.pitch,f.yaw,0,'YXZ');if(c.fov!==f.fov){c.fov=f.fov;c.updateProjectionMatrix()}}
+  _focusDist(){ // distance to whatever is in the middle of the view (for natural pan / dolly speeds)
+    this.ray.setFromCamera(new THREE.Vector2(0,0),this.camera);const h=this.ray.intersectObject(this.room.g,true);return h.length?h[0].distance:20}
+  _flyLook(dx,dy){const f=this.fly,k=THREE.MathUtils.degToRad(f.fov)/(this.renderer.domElement.clientHeight||1);f.tw=null;f.yaw+=dx*k;f.pitch+=dy*k}
+  _flyPan(dx,dy){const f=this.fly,c=this.camera;f.tw=null;const d=Math.max(this._focusDist(),1.5);
+    const wpp=2*d*Math.tan(THREE.MathUtils.degToRad(f.fov)/2)/(this.renderer.domElement.clientHeight||1);
+    const R=new THREE.Vector3(1,0,0).applyQuaternion(c.quaternion),U=new THREE.Vector3(0,1,0).applyQuaternion(c.quaternion);
+    c.position.addScaledVector(R,-dx*wpp).addScaledVector(U,dy*wpp)}
+  _flyDolly(amt){this.fly.tw=null;const F=new THREE.Vector3();this.camera.getWorldDirection(F);this.camera.position.addScaledVector(F,amt)}
+  _flyStep(now){const f=this.fly,c=this.camera,dt=Math.min(.1,(now-(this._lastT||now))/1000);
+    if(f.tw){const w=f.tw,t=Math.min(1,Math.max(0,(now-w.t0)/w.dur)),e=easeIO(t);
+      c.position.lerpVectors(w.from.p,w.to.p,e);f.yaw=w.from.yaw+(w.to.yaw-w.from.yaw)*e;f.pitch=w.from.pitch+(w.to.pitch-w.from.pitch)*e;
+      f.fov=f.fovTo=w.from.fov+(w.to.fov-w.from.fov)*e;if(t>=1)f.tw=null}
+    else if(Math.abs(f.fovTo-f.fov)>.01)f.fov+=(f.fovTo-f.fov)*Math.min(1,dt*12);else f.fov=f.fovTo;
+    const K=this.keys;if(K.size){f.tw=null;const has=(...a)=>a.some(k=>K.has(k));
+      const v=new THREE.Vector3((has('KeyD','ArrowRight')?1:0)-(has('KeyA','ArrowLeft')?1:0),(has('KeyE','PageUp')?1:0)-(has('KeyQ','PageDown')?1:0),(has('KeyS','ArrowDown')?1:0)-(has('KeyW','ArrowUp')?1:0));
+      if(v.lengthSq()){const sp=(K.has('ShiftLeft')||K.has('ShiftRight')?24:8)*dt;const up=v.y;v.y=0;v.applyQuaternion(c.quaternion);v.y+=up;c.position.addScaledVector(v.normalize(),sp)}}
+    this._applyFly()}
   _buildBoard(imgs){
     const {W,H}=BOARD;
     const ppu=this.mobile?128:160;
@@ -203,9 +255,11 @@ export class ChessScene{
   }
   setCamMode(m){this.camMode=m;localStorage.setItem('camMode',m);this.setView(this.view.side)}
   setView(side,animate=true){
-    this.view.side=side;const m0=this.camMode;const free=this.camMode==='Free',c=this.controls;c.enableRotate=free;c.enablePan=free;c.zoomToCursor=free;
-    c.minDistance=free?1.6:5;c.maxDistance=free?40:42;c.maxPolarAngle=free?Math.PI-0.02:1.4;c.panSpeed=1.2;
-    if(!free||!this._wasFree)c.target.set(0,0.3,0);this._wasFree=free;if(this.zoomUI)this.zoomUI.hidden=!free;const fov=free?60:(m0==='Player'?48:m0==='Side'?58:36);this.camera.fov=fov;this._offset();
+    this.view.side=side;const m0=this.camMode;const free=this.camMode==='Free',c=this.controls;
+    if(free){if(!this.fly)this._enterFree();return} // free cam stays exactly where the player leaves it
+    if(this.fly)this._exitFree();
+    c.enableRotate=false;c.enablePan=false;c.zoomToCursor=false;c.minDistance=5;c.maxDistance=42;c.maxPolarAngle=1.4;
+    c.target.set(0,0.3,0);const fov=m0==='Player'?48:m0==='Side'?58:36;this.camera.fov=fov;this._offset();
     const {r,polar}=this._fit();
     const theta=(side==='w'?0:Math.PI)+(this.camMode==='Side'?Math.PI/2:0);
     const target={r,phi:polar,theta};
@@ -217,15 +271,34 @@ export class ChessScene{
   }
   _offset(){const c=this.camera,el=this.renderer.domElement,w=el.clientWidth||1,h=el.clientHeight||1;if(this.camMode==='Player'&&c.aspect<1)c.setViewOffset(w,h,0,-h*.27,w,h);else c.clearViewOffset();c.updateProjectionMatrix()}
   introSweep(){}
-  _applySph(s){const v=new THREE.Vector3().setFromSphericalCoords(s.r,s.phi,s.theta);this.camera.position.copy(this.controls.target).add(v);this.camera.lookAt(this.controls.target);this.controls.update()}
-  resize(){const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);this.renderer.domElement.style.width=w+'px';this.renderer.domElement.style.height=h+'px';this.camera.aspect=w/h;this._offset();if(!this.userOrbit&&!this.camTween&&this.view)this.setView(this.view.side,false)}
+  _applySph(s){this._placed=true;const v=new THREE.Vector3().setFromSphericalCoords(s.r,s.phi,s.theta);this.camera.position.copy(this.controls.target).add(v);this.camera.lookAt(this.controls.target);this.controls.update()}
+  resize(){const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);this.renderer.domElement.style.width=w+'px';this.renderer.domElement.style.height=h+'px';this.camera.aspect=w/h;this._offset();if(!this.fly&&!this.userOrbit&&!this.camTween&&this.view)this.setView(this.view.side,false)}
   // ---------- input ----------
   _bindInput(){
-    const el=this.renderer.domElement;let down=null;
-    el.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,t:performance.now(),id:e.pointerId}});
-    el.addEventListener('pointerup',e=>{if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;
+    const el=this.renderer.domElement;let down=null;const pts=new Map();this.keys=new Set();
+    const geo=()=>{const a=[...pts.values()];if(a.length<2)return null;return {x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2,d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)}};
+    el.addEventListener('pointerdown',e=>{if(e.isPrimary)pts.clear();pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      down=pts.size>1?null:{x:e.clientX,y:e.clientY,t:performance.now(),id:e.pointerId}; // no taps from multi-touch gestures
+      if(this.fly){this.fly.tw=null;try{el.setPointerCapture(e.pointerId)}catch(_){}}});
+    el.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(!p)return;
+      const g0=geo(),dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;if(!this.fly)return;
+      if(pts.size===1){if(e.pointerType==='mouse'&&(e.buttons&6))this._flyPan(dx,dy);else this._flyLook(dx,dy)}
+      else{const g1=geo();if(!g0||!g0.d)return;this._flyPan((g1.x-g0.x),(g1.y-g0.y));
+        const r=THREE.MathUtils.clamp(g1.d/g0.d,.5,2);this._flyDolly(Math.max(this._focusDist(),2)*(1-1/r))}});
+    const up=e=>{pts.delete(e.pointerId)};
+    el.addEventListener('pointerup',e=>{up(e);if(!down||down.id!==e.pointerId){down=null;return}const dx=e.clientX-down.x,dy=e.clientY-down.y;
       if(Math.hypot(dx,dy)<10&&performance.now()-down.t<600){const sq=this.pick(e.clientX,e.clientY);if(sq)this.onTap(sq)}down=null});
-    el.addEventListener('pointercancel',()=>down=null);
+    el.addEventListener('pointercancel',e=>{up(e);down=null});
+    el.addEventListener('wheel',e=>{if(!this.fly)return;e.preventDefault();const f=this.fly,dy=e.deltaMode===1?e.deltaY*33:e.deltaY;
+      if(e.ctrlKey||e.shiftKey||e.altKey)f.fovTo=THREE.MathUtils.clamp(f.fovTo*Math.exp(dy*.0025),10,75); // trackpad pinch / modifier + wheel = optical zoom
+      else this._flyDolly(-THREE.MathUtils.clamp(dy,-300,300)*.0015*Math.max(this._focusDist(),2))},{passive:false});
+    el.addEventListener('contextmenu',e=>{if(this.fly)e.preventDefault()});
+    const MOVE=['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown','ShiftLeft','ShiftRight'];
+    window.addEventListener('keydown',e=>{if(!this.fly||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||''))return;
+      if(MOVE.includes(e.code)){this.keys.add(e.code);if(e.code.startsWith('Arrow')||e.code.startsWith('Page'))e.preventDefault()}
+      else if(e.key==='+'||e.key==='=')this.zoom(.8);else if(e.key==='-')this.zoom(1.25)});
+    window.addEventListener('keyup',e=>this.keys.delete(e.code));
+    window.addEventListener('blur',()=>this.keys.clear());
   }
   pick(cx,cy){
     const rc=this.renderer.domElement.getBoundingClientRect();
@@ -240,7 +313,7 @@ export class ChessScene{
   }
   squareToScreen(sq){const p=sqPos(sq).project(this.camera);const rc=this.renderer.domElement.getBoundingClientRect();return {x:rc.left+(p.x+1)/2*rc.width,y:rc.top+(1-p.y)/2*rc.height}}
   _tick(now){
-    if(this.camTween){const c=this.camTween;const t=Math.min(1,Math.max(0,(now-c.t0)/c.dur));const e=easeIO(t);
+    if(!this.fly&&this.camTween){const c=this.camTween;const t=Math.min(1,Math.max(0,(now-c.t0)/c.dur));const e=easeIO(t);
       this._applySph({r:c.from.r+(c.to.r-c.from.r)*e,phi:c.from.phi+(c.to.phi-c.from.phi)*e,theta:c.from.theta+(c.to.theta-c.from.theta)*e});if(t>=1)this.camTween=null}
     const list=this.tweens;this.tweens=[];const keep=[];
     for(const tw of list){const t=Math.min(1,(now-tw.t0)/tw.dur);
@@ -248,14 +321,8 @@ export class ChessScene{
       else{const e=easeIO(t);tw.obj.position.lerpVectors(tw.from,tw.to,e);tw.obj.position.y=tw.from.y+(tw.to.y-tw.from.y)*e+Math.sin(Math.PI*t)*tw.hop}
       if(t>=1){tw.done&&tw.done()}else keep.push(tw)}
     const fresh=this.tweens;this.tweens=keep.filter(k=>!fresh.some(f=>f.obj===k.obj)).concat(fresh);
-    this.controls.update();
-    if(this.camMode==='Free'){const p=this.camera.position,t=this.controls.target;
-      // keep the eye above the table: when looking up, lift the pivot with the camera so the view turns to the vault/dome
-      const lift=1.4-p.y;if(lift>0){p.y+=lift;t.y+=lift}
-      else if(t.y>0.3&&p.y>t.y){const d=Math.min(t.y-0.3,-lift);p.y-=d;t.y-=d}
-      const cl=(v,a)=>Math.max(-a,Math.min(a,v)),X=ROOM.W/2-2,Z=ROOM.L/2-3;
-      t.x=cl(t.x,X);t.z=cl(t.z,Z);t.y=Math.min(t.y,ceilingAt(t.x)-6);
-      p.x=cl(p.x,X);p.z=cl(p.z,Z);p.y=Math.min(p.y,ceilingAt(p.x)-2)}
+    if(this.fly)this._flyStep(now);else this.controls.update();
+    this._lastT=now;
     this.renderer.render(this.scene,this.camera);
   }
   get busy(){return this.tweens.length>0}

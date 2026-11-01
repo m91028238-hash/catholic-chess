@@ -1,7 +1,7 @@
 // The Sistine Chapel built as real geometry around the board (real proportions: 40.9 x 13.4 x 20.7 m),
 // textured with public-domain fresco scans from Wikimedia Commons (see ASSETS.md / Image credits).
 import * as THREE from 'three';
-import { FLOOR } from './basilica.js?v=7';
+import { FLOOR } from './basilica.js?v=8';
 
 const S=2.6;                        // scene units per metre
 export const ROOM={W:13.4*S,L:40.9*S,H:20.7*S,y0:FLOOR};
@@ -9,9 +9,12 @@ const HW=ROOM.W/2,HL=ROOM.L/2,y0=FLOOR,m=h=>y0+h*S;
 // shallow barrel vault: chord 13.4 m, rise 5.19 m -> radius 6.92 m
 const VR=6.92*S,VYC=m(13.78),VA=Math.asin(HW/VR),SPRING=VYC+Math.sqrt(VR*VR-HW*HW);
 export const ceilingAt=x=>VYC+Math.sqrt(Math.max(0,VR*VR-x*x));
+export const VAULT={R:VR,YC:VYC};
 const BAY=ROOM.L/6;
 // The 15th-century cycles, bay 1 = next to the altar (north wall = right when facing the altar)
 const NORTH=[['baptism',1280/809],['temptations',1536/951],['calling',1536/914],['sermon',1280/745],['keys',1536/951],['supper',1280/720]];
+const TITLES={baptism:'Baptism of Christ',temptations:'Temptations of Christ',calling:'Calling of the Apostles',sermon:'Sermon on the Mount',keys:'Delivery of the Keys',supper:'Last Supper',
+  journey:'Moses’s Journey',trials:'Trials of Moses',redsea:'Crossing of the Red Sea',law:'Tables of the Law',korah:'Punishment of Korah',testament:'Testament of Moses'};
 const SOUTH=[['journey',1280/782],['trials',1280/797],['redsea',1217/748],['law',1265/748],['korah',1515/948],['testament',1280/806]];
 
 const cv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return [c,c.getContext('2d')]};
@@ -27,7 +30,7 @@ export class Sistine{
     this._floor();this._walls();this._vault();this._altar();this._transenna();
   }
   tex(c,rx=1,ry=1){const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.anisotropy=this.aniso;return t}
-  load(name,mat){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=7`,t=>{
+  load(name,mat){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=8`,t=>{
     t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
     mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true;res(t)},undefined,()=>{console.warn('art',name);res(null)}))}
   // ---------- floor: Cosmatesque marble inlay (one tile = the chapel's width) ----------
@@ -78,7 +81,7 @@ export class Sistine{
     u.save();u.clip();u.strokeStyle='rgba(120,105,80,.22)';u.lineWidth=2;for(let k=-20;k<20;k++){u.beginPath();u.moveTo(bw/2+k*26,wt);u.lineTo(bw/2+k*26+wh,wt+wh);u.stroke();u.beginPath();u.moveTo(bw/2+k*26,wt);u.lineTo(bw/2+k*26-wh,wt+wh);u.stroke()}u.restore();
     u.fillStyle='#b8a27a';u.fillRect(0,uh-10,bw,10);
     const ut=this.tex(uc,6,1);
-    this.frescoMats=[];
+    this.frescoMats=[];this.arts=[];
     for(const side of [-1,1]){
       const rot=side<0?Math.PI/2:-Math.PI/2,x=side*HW;
       const plane=(h0,h1,map)=>{const p=new THREE.Mesh(new THREE.PlaneGeometry(ROOM.L,h1-h0),basic({map}));p.rotation.y=rot;p.position.set(x,(h0+h1)/2,0);this.g.add(p)};
@@ -90,6 +93,7 @@ export class Sistine{
         for(const [pad,col,off] of [[.7,0x7a5e2c,.03],[.32,0xc9a85a,.05]]){const fr=new THREE.Mesh(new THREE.PlaneGeometry(w+pad*2,h+pad*2),basic({color:col}));fr.rotation.y=rot;fr.position.set(x-side*off,cy,z);this.g.add(fr)}
         const mat=basic({color:0x8a7a62});const fm=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);fm.rotation.y=rot;fm.position.set(x-side*.08,cy,z);this.g.add(fm);
         this.frescoMats.push([name,mat]);
+        this.arts.push({id:name,name:TITLES[name],c:new THREE.Vector3(x-side*.08,cy,z),n:new THREE.Vector3(-side,0,0),w,h,yaw:side>0?-Math.PI/2:Math.PI/2,pitch:0});
       });
     }
     // end walls (rectangle + vault arc)
@@ -102,6 +106,7 @@ export class Sistine{
     // The Last Judgement (13.7 x 12 m) on the altar wall
     const lw=12*S,lh=lw*4229/3840;this.ljMat=basic({color:0x8a7a62});
     const lj=new THREE.Mesh(new THREE.PlaneGeometry(lw,lh),this.ljMat);lj.position.set(0,m(2.9)+lh/2,-HL+.06);this.g.add(lj);
+    this.lj={c:lj.position.clone(),w:lw,h:lh};
   }
   _vault(){
     const n=64,pos=[],uv=[],idx=[];
@@ -137,6 +142,16 @@ export class Sistine{
       for(let k=0;k<3;k++){const cd=new THREE.Mesh(new THREE.CylinderGeometry(.06*S,.12*S,.6*S,8),marble);cd.position.set(sx*(2.2*S+k*(w-1.2*S)/2),m(4.0),z);this.g.add(cd)}}
     const loft=new THREE.Mesh(new THREE.BoxGeometry(1.2*S,1.3*S,3.4*S),marble);loft.position.set(HW-.6*S,m(3.4),z+4*S);this.g.add(loft);
     const lf=new THREE.Mesh(new THREE.PlaneGeometry(3.2*S,.9*S),basic({color:0xc9a85a}));lf.rotation.y=-Math.PI/2;lf.position.set(HW-1.21*S,m(3.4),z+4*S);this.g.add(lf);
+  }
+  // camera targets for the Free-cam quick-jump list: centre, facing normal (into the room), size, view yaw/pitch
+  artworks(){
+    const L=this.lj,up=new THREE.Vector3(0,-1,0),zx=u=>(.5-u)*ROOM.L;
+    const top=[
+      {id:'ceiling',name:'Ceiling',c:new THREE.Vector3(0,ceilingAt(0),0),n:up,w:ROOM.W,h:ROOM.L*.55,yaw:Math.PI,pitch:Math.PI/2},
+      {id:'adam',name:'Creation of Adam',c:new THREE.Vector3(0,ceilingAt(0),zx(.567)),n:up,w:5.7*S,h:2.8*S,yaw:0,pitch:Math.PI/2},
+      {id:'judgement',name:'Last Judgement',c:L.c.clone(),n:new THREE.Vector3(0,0,1),w:L.w,h:L.h,yaw:0,pitch:0},
+      {id:'christ',name:'Christ the Judge',c:new THREE.Vector3(L.c.x-.02*L.w,L.c.y+L.h*(.5-.31),L.c.z),n:new THREE.Vector3(0,0,1),w:L.w*.3,h:L.h*.2,yaw:0,pitch:0}];
+    return top.concat(this.arts);
   }
   loadCeiling(){return this.load(this.big?'ceiling-3129':'ceiling-2048',this.ceilMat)}
   loadArt(){return Promise.all([this.load('judgement',this.ljMat),...this.frescoMats.map(([n,mt])=>this.load(n,mt))])}
