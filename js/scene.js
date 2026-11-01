@@ -1,8 +1,8 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=2';
-import { pieceGeometries } from './pieces.js?v=2';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=4';
+import { pieceGeometries } from './pieces.js?v=4';
 
 const TOP=0.32;
 const FILES='abcdefgh';
@@ -74,7 +74,7 @@ export class ChessScene{
     pick.position.y=TOP;this.pickPlane=pick;this.scene.add(pick);
   }
   _buildMaterials(){
-    const box=woodCanvas(512,512,{light:[238,214,170],dark:[214,182,132],seed:21,freq:7,warp:2,stretch:5,axis:'y',contrast:.8});
+    const box=woodCanvas(512,512,{light:[226,184,118],dark:[190,142,78],seed:21,freq:7,warp:2,stretch:5,axis:'y',contrast:.8});
     const rose=woodCanvas(512,512,{light:[150,56,30],dark:[74,22,12],seed:33,freq:11,warp:3,stretch:5,axis:'y',contrast:1});
     const mk=(c)=>new THREE.MeshPhysicalMaterial({map:canvasTex(c),roughness:.32,clearcoat:.8,clearcoatRoughness:.18,sheen:0});
     this.mat={w:mk(box),b:mk(rose)};
@@ -84,6 +84,7 @@ export class ChessScene{
   makePiece(type,color){
     const m=new THREE.Mesh(this.geo[type],this.mat[color]);
     m.castShadow=true;m.receiveShadow=true;
+    if(color==='w'){if(!this.olMat)this.olMat=new THREE.MeshBasicMaterial({color:0x3a2412,side:THREE.BackSide});const o=new THREE.Mesh(this.geo[type],this.olMat);o.scale.setScalar(1.05);o.raycast=()=>{};m.add(o)}
     m.userData={type,color,square:null};
     if(type==='n')m.rotation.y=color==='w'?Math.PI/2:-Math.PI/2; // face the opponent
     if(type==='b')m.rotation.y=Math.PI/4;

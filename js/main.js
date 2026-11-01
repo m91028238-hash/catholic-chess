@@ -1,7 +1,7 @@
 import { Chess } from '../vendor/chess.js?v=2';
-import { ChessScene } from './scene.js?v=2';
-import * as AI from './ai.js?v=2';
-import { play, setSound, unlockAudio } from './sound.js?v=2';
+import { ChessScene } from './scene.js?v=4';
+import * as AI from './ai.js?v=4';
+import { play, setSound, unlockAudio } from './sound.js?v=4';
 
 const $=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
