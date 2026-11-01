@@ -1,6 +1,6 @@
-// The marble-and-gold table under the board (the surroundings are now real 360° photos, see scenery.js).
+// The marble-and-gold table under the board (the surroundings are the Sistine Chapel, see sistine.js).
 import * as THREE from 'three';
-import { canvasTex } from './textures.js?v=6';
+import { canvasTex } from './textures.js?v=7';
 
 export const FLOOR=-3.5;
 const cv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return [c,c.getContext('2d')]};

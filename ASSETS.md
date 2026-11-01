@@ -3,5 +3,19 @@
 - chess.js 1.4.0 (vendor/chess.js) — BSD-2-Clause, licenses/chess.js-LICENSE.txt
 - Board engraving, side panels (Chi-Rho/IHS and St Benedict medal), wood textures, Staunton pieces, sounds — procedural, made for this game.
 - Game code — GPLv3 (LICENSE).
-- 360° panoramas (assets/pano/): St Peter's Basilica nave, portico and square by mapconcierge (Mapillary) — CC BY-SA 4.0; Church of All Nations, Gethsemane by Zeev Stein (PikiWiki Israel) — CC BY 2.5. All via Wikimedia Commons; links in the game's "Image credits". Resized/recompressed.
-- Paintings (assets/art/): Raphael's Transfiguration and Sistine Madonna, Perugino's Delivery of the Keys, Caravaggio's Crucifixion of St Peter, Michelangelo's Creation of Adam — public domain, via Wikimedia Commons.
+
+- Sistine Chapel art (assets/sistine/), via Wikimedia Commons, resized/recompressed:
+  - The Sistine Chapel ceiling — Michelangelo, 1508–12. Fresco public domain; composite photo CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:CAPPELLA_SISTINA_Ceiling.jpg
+  - The Last Judgement — Michelangelo, 1536–41. Public domain. https://commons.wikimedia.org/wiki/File:Last_Judgement_(Michelangelo).jpg
+  - The Baptism of Christ — Pietro Perugino, 1482. Public domain. https://commons.wikimedia.org/wiki/File:Pietro_Perugino_-_Baptism_of_Christ_-_Sistine_Chapel_-_cat13a.jpg
+  - The Temptations of Christ — Sandro Botticelli, 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:05_Tentaciones_de_Cristo_(Botticelli).jpg
+  - The Calling of the First Apostles — Domenico Ghirlandaio, 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Domenico_Ghirlandaio_-_Llamada_a_los_primeros_ap%C3%B3stoles_(Capilla_Sixtina,_Roma,_1481-82).jpg
+  - The Sermon on the Mount — Cosimo Rosselli (and Piero di Cosimo), 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Cosimo_Rosselli_Sermone_della_Montagna.jpg
+  - The Delivery of the Keys to St Peter — Pietro Perugino, 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Pietro_Perugino_-_Entrega_de_las_llaves_a_San_Pedro_(Capilla_Sixtina,_Roma,_1481-82).jpg
+  - The Last Supper — Cosimo Rosselli, 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Cosimo_Roselli_-_%C3%9Altima_Cena_(Capilla_Sixtina,_Roma,_1481-82).jpg
+  - Moses’s Journey into Egypt — Pietro Perugino (and Pinturicchio), 1482. Public domain. https://commons.wikimedia.org/wiki/File:Pietro_Perugino_cat13d.jpg
+  - The Trials of Moses — Sandro Botticelli, 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Eventos_de_la_vida_de_Mois%C3%A9s_(Sandro_Botticelli).jpg
+  - The Crossing of the Red Sea — Cosimo Rosselli / Biagio d’Antonio, 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Cosimo_Rosselli_Attraversamento_del_Mar_Rosso.jpg
+  - Moses Receiving the Tables of the Law — Cosimo Rosselli, 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Cosimo_Rosselli_le_Tavole_della_Legge.jpg
+  - The Punishment of the Sons of Korah — Sandro Botticelli, 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Botticcelli,_Sandro_-_The_Punishment_of_Korah_and_the_Stoning_of_Moses_and_Aaron_-_1481-82.jpg
+  - The Testament and Death of Moses — Luca Signorelli (and Bartolomeo della Gatta), 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Signorelli,_Luca_-_Moses%27s_Testament_and_Death_-_1481-82.jpg
