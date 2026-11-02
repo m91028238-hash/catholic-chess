@@ -1,7 +1,7 @@
 import { Chess } from '../vendor/chess.js?v=2';
-import { ChessScene } from './scene.js?v=19';
-import * as AI from './ai.js?v=19';
-import { play, setSound, unlockAudio } from './sound.js?v=19';
+import { ChessScene } from './scene.js?v=20';
+import * as AI from './ai.js?v=20';
+import { play, setSound, unlockAudio } from './sound.js?v=20';
 
 const $=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
@@ -27,7 +27,7 @@ const unlocked=()=>Math.max(1,Math.min(LADDER.length,+lsGet('cc_lvl',1)||1));
 const saveS=()=>lsSet('cc_settings',JSON.stringify(S));
 
 // ---------- state ----------
-let game=new Chess(),human='w',over=null,selected=null,targets=[],pendingPromo=null,thinking=false,clocks=null,clockTimer=null,lastTick=0,started=false,resignArm=0,drawOffer=null,aiToken=0,menuOpen=false,current=null;
+let game=new Chess(),human='w',over=null,selected=null,targets=[],pendingPromo=null,thinking=false,clocks=null,clockTimer=null,lastTick=0,started=false,resignArm=0,drawOffer=null,aiToken=0,menuOpen=false,current=null,seated=true;
 const scene=new ChessScene($('stage'),{onTap:onSquare});
 scene.fast=FAST;
 scene.onCapture=()=>{};
@@ -79,7 +79,7 @@ function renderClocks(){
   top.className='clk'+(game.turn()===ts&&!over?' on':'')+(clocks&&clocks[ts]<30000?' low':'')+(ts==='w'?' cw':' cb');
 }
 function tickClock(){
-  if(!clocks||over||!started||menuOpen){lastTick=performance.now();return}
+  if(!clocks||over||!started||!seated||menuOpen){lastTick=performance.now();return}
   const now=performance.now();clocks[game.turn()]-=now-lastTick;lastTick=now;
   if(clocks[game.turn()]<=0){clocks[game.turn()]=0;const loser=game.turn();const win=loser==='w'?'b':'w';
     // opponent cannot mate -> draw
@@ -103,10 +103,11 @@ function startGame(){
   hidePanels();
   scene.clearPieces();scene.sync(game.board(),false);
   scene.setView(current.mode==='2p'?'w':human,false);
+  seated=false;const tok=aiToken;scene.walkToChair(current.mode==='2p'?'w':human,()=>{seated=true;lastTick=performance.now();setStatus();
+    if(tok===aiToken&&isAI()&&game.turn()!==human&&!over)setTimeout(()=>{if(tok===aiToken)aiMove()},FAST?10:900)});
   if(isAI()){AI.preload(aiCfg());AI.newGame()}
   setObjective();renderHistory();refreshMarkers();renderClocks();setStatus();updateButtons();
   closeMenu();
-  if(isAI()&&game.turn()!==human)setTimeout(aiMove,FAST?10:1200);
 }
 function updateButtons(){
   $('bDraw').hidden=isAI();$('bRotate').hidden=isAI();
@@ -118,7 +119,7 @@ function hidePanels(){$('result').hidden=true;$('promo').hidden=true;$('offer').
 
 function onSquare(sq){
   unlockAudio();
-  if(over||thinking||pendingPromo||menuOpen)return;
+  if(over||thinking||pendingPromo||menuOpen||!seated)return;
   if(isAI()&&game.turn()!==human)return;
   if(selected){
     const t=targets.find(t=>t.sq===sq);
@@ -234,7 +235,7 @@ $('offerYes').onclick=()=>{$('offer').hidden=true;endGame('draw','Draw agreed','
 $('offerNo').onclick=()=>{$('offer').hidden=true;drawOffer=null;toast('Draw declined')};
 $('bRotate').onclick=()=>{S.rotate=!S.rotate;saveS();updateButtons();if(S.rotate&&!over)scene.setView(game.turn());renderClocks()};
 const CAMS=['Player','Top','Side','Walk','Free cam'];scene.onCamChange=m=>{$('bView').textContent='Camera: '+m};$('bView').textContent='Camera: '+scene.camMode;
-$('bView').onclick=()=>{scene.camMode=CAMS[(CAMS.indexOf(scene.camMode)+1)%CAMS.length];localStorage.setItem('camMode',scene.camMode);$('bView').textContent='Camera: '+scene.camMode;scene.setView(current&&current.mode==='2p'?(S.rotate?game.turn():scene.view.side):human)};
+$('bView').onclick=()=>{if(!seated){scene.sitDown();return}scene.camMode=CAMS[(CAMS.indexOf(scene.camMode)+1)%CAMS.length];localStorage.setItem('camMode',scene.camMode);$('bView').textContent='Camera: '+scene.camMode;scene.setView(current&&current.mode==='2p'?(S.rotate?game.turn():scene.view.side):human)};
 $('bSound').onclick=()=>{S.sound=!S.sound;setSound(S.sound);saveS();updateButtons();unlockAudio();play('select')};
 $('menuBtn').onclick=()=>openMenu();
 

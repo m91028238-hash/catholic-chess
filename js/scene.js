@@ -1,10 +1,11 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=19';
-import { pieceGeometries } from './pieces.js?v=19';
-import { buildPlinth } from './basilica.js?v=19';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=19';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=20';
+import { pieceGeometries } from './pieces.js?v=20';
+import { buildPlinth } from './basilica.js?v=20';
+import { Sistine, ROOM, ceilingAt } from './sistine.js?v=20';
+const CHAIR_Z=7.0; // chair centres, each side of the table (2.6 units per metre)
 
 const TOP=0.32;
 const FILES='abcdefgh';
@@ -42,6 +43,7 @@ export class ChessScene{
     this.graveSlots={w:0,b:0};
     buildPlinth(sc,{env:this.env});
     this.room=new Sistine(sc,r);this.room.loadCeiling(); // ceiling early
+    this._buildChairs();
     this._buildZoomUI();
     this.ray=new THREE.Raycaster();
     this._bindInput();
@@ -72,6 +74,8 @@ export class ChessScene{
       else if(k==='back'){if(this.free)this.freeBack();else this.backToBoard()}else if(this.free)this.freeToArt(k);else this.walkToArt(k)});
     this.host.appendChild(a);
     // Walk: virtual joystick (bottom-left)
+    const sh=this.seatUI=document.createElement('div');sh.className='seathint';sh.hidden=true;sh.innerHTML='<span>Walk to your chair to sit and play</span><button type="button">Skip, sit now</button>';
+    sh.querySelector('button').addEventListener('click',e=>{e.stopPropagation();this.sitDown()});this.host.appendChild(sh);
     const j=this.joyUI=document.createElement('div');j.className='joy';j.hidden=true;j.innerHTML='<div class="knob"></div>';this.host.appendChild(j);
     const J=this.joy={x:0,y:0,id:null},R=44,knob=j.firstChild;
     const setK=(dx,dy)=>{const l=Math.hypot(dx,dy),s=l>R?R/l:1;dx*=s;dy*=s;knob.style.transform=`translate(${dx}px,${dy}px)`;
@@ -84,6 +88,39 @@ export class ChessScene{
   }
   zoom(f){ // Walk: optical zoom (field of view); Free cam: dolly
     if(this.free)return this._freeDolly(f);if(!this.walk)return;this.walk.fovTo=THREE.MathUtils.clamp(this.walk.fovTo*f,15,75)}
+  // ---------- chairs: one each side of the table; the game starts with a walk to yours ----------
+  _buildChairs(){
+    const S=2.6,F=ROOM.y0,wood=new THREE.MeshStandardMaterial({color:0x3a2114,roughness:.55,metalness:.05}),
+      vel=new THREE.MeshStandardMaterial({color:0x8a1020,roughness:.9,emissive:0x1a0206,emissiveIntensity:1});
+    this.chairs={};this.chairMeshes=[];
+    const box=(g,w,h,d,x,y,z,m)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=o.receiveShadow=true;g.add(o);return o};
+    for(const side of ['w','b']){const s=side==='w'?1:-1,g=new THREE.Group();g.position.set(0,F,CHAIR_Z*s);g.rotation.y=s>0?0:Math.PI;
+      const W=.5*S,D=.46*S,H=.45*S,B=1.02*S,l=.045*S;
+      for(const [x,z] of [[-1,-1],[1,-1],[-1,1],[1,1]])box(g,l,z>0?B:H,l,x*(W/2-l/2),(z>0?B:H)/2,z*(D/2-l/2),wood);
+      box(g,W,.05*S,D,0,H,0,wood);box(g,W-.04*S,.06*S,D-.04*S,0,H+.055*S,0,vel);
+      box(g,W,.07*S,l,0,B-.035*S,D/2-l/2,wood);box(g,W-2*l,.5*S,.03*S,0,H+.42*S,D/2-l/2,vel);
+      const glow=new THREE.Mesh(new THREE.PlaneGeometry(2.4*S,2.4*S).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:this._glowTex(),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false,opacity:.8}));
+      glow.position.y=.02;glow.renderOrder=2;glow.visible=false;g.add(glow);
+      const halo=new THREE.Mesh(new THREE.TorusGeometry(.42*S,.018*S,8,48),new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:.8,toneMapped:false,depthWrite:false}));
+      halo.rotation.x=Math.PI/2;halo.position.y=B+.18*S;halo.visible=false;g.add(halo);
+      g.traverse(o=>{if(o.isMesh&&o!==glow&&o!==halo){o.userData.chair=side;this.chairMeshes.push(o)}});
+      this.scene.add(g);this.chairs[side]={g,glow,halo,z:CHAIR_Z*s}}
+  }
+  _glowTex(){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),gr=x.createRadialGradient(64,64,4,64,64,64);
+    gr.addColorStop(0,'rgba(255,214,120,.9)');gr.addColorStop(.45,'rgba(255,190,80,.35)');gr.addColorStop(1,'rgba(255,180,60,0)');x.fillStyle=gr;x.fillRect(0,0,128,128);return new THREE.CanvasTexture(c)}
+  // start of a game: stand a few metres down the aisle, facing the board; walk to (or tap) the glowing chair to sit
+  walkToChair(side,onSeated){
+    const s=side==='b'?-1:1;this.view.side=side;this.onSeated=onSeated;
+    if(this.free)this._exitFree();this.camMode='Walk';this.onCamChange&&this.onCamChange('Walk');
+    if(!this.walk)this._enterWalk();const w=this.walk;
+    w.pos.set(0,0,13.9*s);w.vel.set(0,0,0);w.glide=null;w.yaw=w.yawT=s>0?0:Math.PI;w.pitch=w.pitchT=-.22;w.fov=w.fovTo=70;
+    this.seat={side};for(const k in this.chairs){const c=this.chairs[k];c.glow.visible=c.halo.visible=k===side}
+    this.seatUI.hidden=false;this._walkStep(performance.now());
+  }
+  sitDown(){if(!this.seat)return;this._endSeat();this.camMode='Player';localStorage.setItem('camMode','Player');this.onCamChange&&this.onCamChange('Player');this.setView(this.view.side)}
+  _endSeat(){if(!this.seat)return;this.seat=null;for(const k in this.chairs){const c=this.chairs[k];c.glow.visible=c.halo.visible=false}
+    this.seatUI.hidden=true;const f=this.onSeated;this.onSeated=null;f&&f()}
+  _seatGlow(now){if(!this.seat)return;const c=this.chairs[this.seat.side],p=.5+.5*Math.sin(now*.004);c.glow.material.opacity=.45+.45*p;c.halo.material.opacity=.45+.5*p;c.halo.scale.setScalar(1+.06*p)}
   // ---------- Walk: first-person pilgrim on the chapel floor ----------
   _buildBody(){
     const M=2.6,g=new THREE.Group();g.visible=false;
@@ -124,7 +161,7 @@ export class ChessScene{
   backToBoard(){this.setCamMode('Player');this.onCamChange&&this.onCamChange('Player')}
   // obstacles (x0,x1,z0,z1): the chess table, the altar steps, the two halves of the marble screen
   get _boxes(){if(!this._bx){const S=2.6,HW=ROOM.W/2,HL=ROOM.L/2,az=-HL+3.2*S-.4,tz=HL-14.5*S;
-    this._bx=[[-6.9,6.9,-4.9,4.9],[-4*S,4*S,az-1.7*S,az+1.7*S],[1.6*S,HW,tz-.25*S,tz+.25*S],[-HW,-1.6*S,tz-.25*S,tz+.25*S]];if(this.room&&this.room.organ)this._bx.push(this.room.organ)}return this._bx}
+    this._bx=[[-6.9,6.9,-4.9,4.9],[-4*S,4*S,az-1.7*S,az+1.7*S],[1.6*S,HW,tz-.25*S,tz+.25*S],[-HW,-1.6*S,tz-.25*S,tz+.25*S],[-.7,.7,CHAIR_Z-.4,CHAIR_Z+.6],[-.7,.7,-CHAIR_Z-.6,-CHAIR_Z+.4]];if(this.room&&this.room.organ)this._bx.push(this.room.organ)}return this._bx}
   _collide(p){const S=2.6,r=.3*S,M=.35*S,X=ROOM.W/2-M,Z=ROOM.L/2-M,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
     for(const [x0,x1,z0,z1] of this._boxes){const cx=cl(p.x,x0,x1),cz=cl(p.z,z0,z1),dx=p.x-cx,dz=p.z-cz,d=Math.hypot(dx,dz);if(d>=r)continue;
       if(d>1e-6){p.x=cx+dx/d*r;p.z=cz+dz/d*r}
@@ -174,6 +211,7 @@ export class ChessScene{
     const b=this.body;b.position.set(w.pos.x,ROOM.y0,w.pos.z);b.rotation.y=w.yaw;
     this.legs[0].rotation.x=Math.sin(w.phase)*.45*amt;this.legs[1].rotation.x=-Math.sin(w.phase)*.45*amt;
     // hi-res fresco for whatever the pilgrim is standing near
+    if(this.seat){const c=this.chairs[this.seat.side];if(Math.hypot(w.pos.x,w.pos.z-c.z)<1.2*S+.6){this.sitDown();return}}
     if(now-w.hdT>500){w.hdT=now;this._hdLook(16*S)}}
   _hdLook(max){const c=this.camera,fw=new THREE.Vector3();c.getWorldDirection(fw);let best=null,bd=max; // hi-res for the fresco being looked at
     for(const o of this.room.artworks()){if(o.pitch>1)continue;const v=o.c.clone().sub(c.position),l=v.length();if(v.dot(fw)<.75*l)continue;
@@ -373,7 +411,7 @@ export class ChessScene{
   }
   setCamMode(m){this.camMode=m;localStorage.setItem('camMode',m);this.setView(this.view.side)}
   setView(side,animate=true){
-    this.view.side=side;const m0=this.camMode;const c=this.controls;
+    this.view.side=side;if(this.seat&&this.camMode!=='Walk')this._endSeat();const m0=this.camMode;const c=this.controls;
     if(this.camMode==='Walk'){if(this.free)this._exitFree();if(!this.walk)this._enterWalk();return} // the pilgrim stays exactly where they are left
     if(this.walk)this._exitWalk();
     if(this.camMode==='Free cam'){if(!this.free)this._enterFree();return} // Free cam stays where the user left it
@@ -421,7 +459,7 @@ export class ChessScene{
     const up=e=>{pts.delete(e.pointerId);const F=this.free;
       if(F){if(pts.size<2)F.two=null;if(F.drag&&F.drag.id===e.pointerId)F.drag=null;if(pts.size===1&&!F.drag){const [id]=pts.keys();F.drag={id,sx:0,sy:0,on:true,pan:false}}}if(e.pointerId===L.pinch)L.pinch=null;else if(e.pointerId===L.id){L.id=L.pinch!=null?L.pinch:null;L.pinch=null}};
     el.addEventListener('pointerup',e=>{up(e);if(!down||down.id!==e.pointerId){down=null;return}const dx=e.clientX-down.x,dy=e.clientY-down.y;
-      if(Math.hypot(dx,dy)<10&&performance.now()-down.t<600){const sq=this.pick(e.clientX,e.clientY);if(sq)this.onTap(sq)}down=null});
+      if(Math.hypot(dx,dy)<10&&performance.now()-down.t<600){if(this.seat&&this._hitChair(e.clientX,e.clientY)){this.sitDown();down=null;return}const sq=this.pick(e.clientX,e.clientY);if(sq)this.onTap(sq)}down=null});
     el.addEventListener('pointercancel',e=>{up(e);down=null});
     el.addEventListener('wheel',e=>{if(this.free){e.preventDefault();const dy=e.deltaMode===1?e.deltaY*33:e.deltaY;this._freeDolly(Math.exp(THREE.MathUtils.clamp(dy,-300,300)*.0015));return}
       if(!this.walk)return;e.preventDefault();const dy=e.deltaMode===1?e.deltaY*33:e.deltaY;
@@ -435,6 +473,8 @@ export class ChessScene{
     window.addEventListener('keyup',e=>this.keys.delete(e.code));
     window.addEventListener('blur',()=>this.keys.clear());
   }
+  _hitChair(cx,cy){const rc=this.renderer.domElement.getBoundingClientRect();this.ray.setFromCamera(new THREE.Vector2(((cx-rc.left)/rc.width)*2-1,-((cy-rc.top)/rc.height)*2+1),this.camera);
+    const h=this.ray.intersectObjects(this.chairMeshes,false);return h.length&&h[0].object.userData.chair===this.seat.side}
   pick(cx,cy){
     const rc=this.renderer.domElement.getBoundingClientRect();
     const v=new THREE.Vector2(((cx-rc.left)/rc.width)*2-1,-((cy-rc.top)/rc.height)*2+1);
@@ -457,6 +497,7 @@ export class ChessScene{
       else{const e=easeIO(t);tw.obj.position.lerpVectors(tw.from,tw.to,e);tw.obj.position.y=tw.from.y+(tw.to.y-tw.from.y)*e+Math.sin(Math.PI*t)*tw.hop}
       if(t>=1){tw.done&&tw.done()}else keep.push(tw)}
     const fresh=this.tweens;this.tweens=keep.filter(k=>!fresh.some(f=>f.obj===k.obj)).concat(fresh);
+    this._seatGlow(now);
     if(this.walk)this._walkStep(now);else if(this.free)this._freeStep(now);else this.controls.update();
     this._lastT=now;
     this.renderer.render(this.scene,this.camera);

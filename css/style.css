@@ -88,3 +88,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
   .artui{left:calc(46vw + 8px);right:110px}
   .zoomui{right:calc(min(300px,40vw) + 14px)}
 }
+
+.seathint{position:absolute;left:22px;bottom:148px;z-index:5;display:flex;flex-direction:column;align-items:flex-start;gap:4px;font-size:.78rem;color:#f3e2bd;text-shadow:0 1px 3px #000;pointer-events:none;max-width:60vw}
+.seathint[hidden]{display:none}
+.seathint button{pointer-events:auto;background:none;border:0;padding:2px 0;color:#e6c47a;font-size:.74rem;text-decoration:underline;cursor:pointer;min-height:0}
