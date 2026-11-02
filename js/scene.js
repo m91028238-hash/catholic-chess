@@ -1,10 +1,10 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=10';
-import { pieceGeometries } from './pieces.js?v=10';
-import { buildPlinth } from './basilica.js?v=10';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=10';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=11';
+import { pieceGeometries } from './pieces.js?v=11';
+import { buildPlinth } from './basilica.js?v=11';
+import { Sistine, ROOM, ceilingAt } from './sistine.js?v=11';
 
 const TOP=0.32;
 const FILES='abcdefgh';
@@ -111,7 +111,7 @@ export class ChessScene{
     const blob=new THREE.Mesh(new THREE.PlaneGeometry(1.1*M,1.1*M).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false,toneMapped:false}));
     blob.position.set(0,.01,.12*M);blob.renderOrder=1;g.add(blob);
     this.scene.add(g);return g}
-  _seatPose(){const s=this.view.side==='b'?-1:1;return {x:0,z:9.7*s,yaw:s>0?0:Math.PI,pitch:-.3}}
+  _seatPose(){const s=this.view.side==='b'?-1:1;return {x:0,z:5.85*s,yaw:s>0?0:Math.PI,pitch:-.5}}
   _enterWalk(){
     this.controls.enabled=false;this.camTween=null;const c=this.camera;c.rotation.order='YXZ';
     const P=this._seatPose();
@@ -123,8 +123,8 @@ export class ChessScene{
     if(this.body)this.body.visible=false;this.zoomUI.hidden=this.artUI.hidden=this.joyUI.hidden=true;this.joy.x=this.joy.y=0}
   backToBoard(){this.setCamMode('Player');this.onCamChange&&this.onCamChange('Player')}
   // obstacles (x0,x1,z0,z1): the chess table, the altar steps, the two halves of the marble screen
-  get _boxes(){if(!this._bx){const S=2.6,HW=ROOM.W/2,HL=ROOM.L/2,az=-HL+3.2*S-.4,tz=HL-14.5*S;
-    this._bx=[[-12,12,-8,8],[-4*S,4*S,az-1.7*S,az+1.7*S],[1.6*S,HW,tz-.25*S,tz+.25*S],[-HW,-1.6*S,tz-.25*S,tz+.25*S]]}return this._bx}
+  get _boxes(){if(!this._bx){const S=2.6,HW=ROOM.W/2,HL=ROOM.L/2,az=-HL+10*S-.4,tz=HL-14.5*S;
+    this._bx=[[-6.9,6.9,-4.9,4.9],[-4*S,4*S,az-1.7*S,az+1.7*S],[1.6*S,HW,tz-.25*S,tz+.25*S],[-HW,-1.6*S,tz-.25*S,tz+.25*S]]}return this._bx}
   _collide(p){const S=2.6,r=.3*S,M=.35*S,X=ROOM.W/2-M,Z=ROOM.L/2-M,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
     for(const [x0,x1,z0,z1] of this._boxes){const cx=cl(p.x,x0,x1),cz=cl(p.z,z0,z1),dx=p.x-cx,dz=p.z-cz,d=Math.hypot(dx,dz);if(d>=r)continue;
       if(d>1e-6){p.x=cx+dx/d*r;p.z=cz+dz/d*r}
@@ -138,10 +138,10 @@ export class ChessScene{
       pts.push(new THREE.Vector3(lx,0,A.z),new THREE.Vector3(lx,0,b.z))}
     pts.push(b.clone());return pts}
   walkToArt(id){const w=this.walk;if(!w)return;const o=this.room.artworks().find(a=>a.id===id);if(!o)return;
-    const S=2.6,EYE=ROOM.y0+1.65*S,up=o.pitch>1;let p;
+    const S=2.6,EYE=ROOM.y0+1.68*S,up=o.pitch>1;let p;
     if(up)p=new THREE.Vector3(o.c.x,0,o.id==='ceiling'?-20:o.c.z);
-    else if(o.n.z)p=new THREE.Vector3(o.c.x,0,o.c.z+(o.id==='christ'?5.6:13)*S);
-    else p=new THREE.Vector3(o.c.x+o.n.x*4.5*S,0,o.c.z);
+    else if(o.n.z)p=new THREE.Vector3(o.c.x,0,o.c.z+(o.id==='christ'?2.4:4.6)*S);
+    else p=new THREE.Vector3(o.c.x+o.n.x*3.8*S,0,o.c.z);
     this._collide(p);
     const dx=o.c.x-p.x,dz=o.c.z-p.z,hd=Math.hypot(dx,dz),dist=Math.hypot(hd,o.c.y-EYE);
     let yaw=up?o.yaw:Math.atan2(-dx,-dz),pitch=up?THREE.MathUtils.degToRad(89):Math.atan2(o.c.y-EYE,hd);
@@ -169,12 +169,12 @@ export class ChessScene{
     w.fov+=(w.fovTo-w.fov)*(1-Math.exp(-dt*12));if(Math.abs(w.fovTo-w.fov)<.01)w.fov=w.fovTo;
     // gait: subtle head-bob and leg swing
     const spd=Math.hypot(w.vel.x,w.vel.z),amt=Math.min(1,spd/(1.6*S));w.phase+=dt*spd*2.2;
-    c.position.set(w.pos.x,ROOM.y0+1.65*S+Math.sin(w.phase*2)*.018*S*amt,w.pos.z);c.rotation.set(w.pitch,w.yaw,0,'YXZ');
+    c.position.set(w.pos.x,ROOM.y0+1.68*S+Math.sin(w.phase*2)*.018*S*amt,w.pos.z);c.rotation.set(w.pitch,w.yaw,0,'YXZ');
     if(c.fov!==w.fov){c.fov=w.fov;c.updateProjectionMatrix()}
     const b=this.body;b.position.set(w.pos.x,ROOM.y0,w.pos.z);b.rotation.y=w.yaw;
     this.legs[0].rotation.x=Math.sin(w.phase)*.45*amt;this.legs[1].rotation.x=-Math.sin(w.phase)*.45*amt;
     // hi-res fresco for whatever the pilgrim is standing near
-    if(now-w.hdT>500){w.hdT=now;let best=null,bd=12*S;for(const o of this.room.artworks()){if(o.pitch>1||o.id==='christ')continue;const d=Math.hypot(o.c.x-w.pos.x,o.c.z-w.pos.z)-(o.id==='judgement'?6*S:0);if(d<bd){bd=d;best=o}}if(best)this.room.wantHD(best.id)}}
+    if(now-w.hdT>500){w.hdT=now;let best=null,bd=12*S;for(const o of this.room.artworks()){if(o.pitch>1||o.id==='christ')continue;const d=Math.hypot(o.c.x-w.pos.x,o.c.z-w.pos.z)-(o.id==='judgement'?S:0);if(d<bd){bd=d;best=o}}if(best)this.room.wantHD(best.id)}}
   // ---------- Free cam: stable damped orbit around a target (board or an artwork); no roll, no inertia ----------
   _boardFocus(){const s=this.view.side==='b'?Math.PI:0,c=this.camera,hf=2*Math.atan(Math.tan(THREE.MathUtils.degToRad(c.fov)/2)*c.aspect);
     return {t:new THREE.Vector3(0,.3,0),yaw:s,pitch:THREE.MathUtils.degToRad(48),dist:THREE.MathUtils.clamp(5.6/Math.tan(hf/2),13,30),pmin:5,pmax:85,dmin:2.2,board:true}}
@@ -230,7 +230,7 @@ export class ChessScene{
     // hi-res fresco for whatever the camera is looking at closely
     if(now-F.hdT>500){F.hdT=now;const fw=new THREE.Vector3();c.getWorldDirection(fw);let best=null,bd=14*2.6;
       for(const o of this.room.artworks()){if(o.pitch>1)continue;const v=o.c.clone().sub(c.position),l=v.length();if(v.dot(fw)<.5*l)continue;
-        const s=l-(o.id==='judgement'?6*2.6:0);if(s<bd){bd=s;best=o}}
+        const s=l-(o.id==='judgement'?2.6:0);if(s<bd){bd=s;best=o}}
       if(best)this.room.wantHD(best.id==='christ'?'judgement':best.id)}}
   _buildBoard(imgs){
     const {W,H}=BOARD;
@@ -282,10 +282,10 @@ export class ChessScene{
   }
   pieceAt(sq){return this.pieces.find(p=>p.userData.square===sq)}
   clearPieces(){for(const p of this.pieces)this.scene.remove(p);this.pieces=[];this.graveSlots={w:0,b:0}}
-  gravePos(color,idx){ // captured pieces rest on the table in front of the capturer
-    const side=color==='w'?-1:1; // white pieces captured -> black's side
+  gravePos(color,idx){ // captured pieces rest on the table beside the board (keeps the table shallow so a walker can stand close)
+    const side=color==='w'?-1:1; // white pieces captured -> left of white, black's -> right
     const row=Math.floor(idx/8),col=idx%8;
-    return new THREE.Vector3((col-3.5)*0.62*side,0,side*-1*(5.15+row*0.62));
+    return new THREE.Vector3(side*(5.0+row*0.62),0,(col-3.5)*0.62*-side);
   }
   // Rebuild pieces from a chess.js board array, animating existing meshes when possible.
   sync(board,animate=true){
@@ -349,7 +349,7 @@ export class ChessScene{
     const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color,transparent:true,opacity:op,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
     m.position.copy(sqPos(sq));m.position.y+=.004;this.markers.add(m);return m}
   setMarkers({last,selected,targets=[],check}){
-    this.clearMarkers();
+    this.clearMarkers();this.targets=targets.map(t=>t.sq);
     if(last){this._quad(last.from,0xe0a020,.28);this._quad(last.to,0xe0a020,.38)}
     if(selected)this._quad(selected,0x3d8a3a,.45);
     if(check){const g=new THREE.CircleGeometry(.5,32);g.rotateX(-Math.PI/2);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xd01010,transparent:true,opacity:.55,depthWrite:false}));m.position.copy(sqPos(check));m.position.y+=.006;this.markers.add(m)}
@@ -440,10 +440,11 @@ export class ChessScene{
     this.ray.setFromCamera(v,this.camera);
     const onBoard=this.pieces.filter(p=>p.userData.square);
     const hp=this.ray.intersectObjects(onBoard,false);
-    if(hp.length)return hp[0].object.userData.square;
-    const h=this.ray.intersectObject(this.pickPlane,false);
-    if(h.length){const p=h[0].point;const f=Math.floor(p.x+4),r=8-Math.floor(p.z+4);if(f>=0&&f<8&&r>=1&&r<=8)return FILES[f]+r}
-    return null;
+    const h=this.ray.intersectObject(this.pickPlane,false);let sq=null;
+    if(h.length){const p=h[0].point;const f=Math.floor(p.x+4),r=8-Math.floor(p.z+4);if(f>=0&&f<8&&r>=1&&r<=8)sq=FILES[f]+r}
+    if(hp.length){const ps=hp[0].object.userData.square,isT=s=>s&&(this.targets||[]).includes(s);
+      return isT(sq)&&!isT(ps)?sq:ps} // a move dot hidden behind a nearer piece still counts (low walk / free-cam angles)
+    return sq;
   }
   squareToScreen(sq){const p=sqPos(sq).project(this.camera);const rc=this.renderer.domElement.getBoundingClientRect();return {x:rc.left+(p.x+1)/2*rc.width,y:rc.top+(1-p.y)/2*rc.height}}
   _tick(now){
