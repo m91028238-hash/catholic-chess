@@ -1,10 +1,10 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=12';
-import { pieceGeometries } from './pieces.js?v=12';
-import { buildPlinth } from './basilica.js?v=12';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=12';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=13';
+import { pieceGeometries } from './pieces.js?v=13';
+import { buildPlinth } from './basilica.js?v=13';
+import { Sistine, ROOM, ceilingAt } from './sistine.js?v=13';
 
 const TOP=0.32;
 const FILES='abcdefgh';
@@ -123,7 +123,7 @@ export class ChessScene{
     if(this.body)this.body.visible=false;this.zoomUI.hidden=this.artUI.hidden=this.joyUI.hidden=true;this.joy.x=this.joy.y=0}
   backToBoard(){this.setCamMode('Player');this.onCamChange&&this.onCamChange('Player')}
   // obstacles (x0,x1,z0,z1): the chess table, the altar steps, the two halves of the marble screen
-  get _boxes(){if(!this._bx){const S=2.6,HW=ROOM.W/2,HL=ROOM.L/2,az=-HL+10*S-.4,tz=HL-14.5*S;
+  get _boxes(){if(!this._bx){const S=2.6,HW=ROOM.W/2,HL=ROOM.L/2,az=-HL+3.2*S-.4,tz=HL-14.5*S;
     this._bx=[[-6.9,6.9,-4.9,4.9],[-4*S,4*S,az-1.7*S,az+1.7*S],[1.6*S,HW,tz-.25*S,tz+.25*S],[-HW,-1.6*S,tz-.25*S,tz+.25*S]]}return this._bx}
   _collide(p){const S=2.6,r=.3*S,M=.35*S,X=ROOM.W/2-M,Z=ROOM.L/2-M,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
     for(const [x0,x1,z0,z1] of this._boxes){const cx=cl(p.x,x0,x1),cz=cl(p.z,z0,z1),dx=p.x-cx,dz=p.z-cz,d=Math.hypot(dx,dz);if(d>=r)continue;
@@ -140,8 +140,8 @@ export class ChessScene{
   walkToArt(id){const w=this.walk;if(!w)return;const o=this.room.artworks().find(a=>a.id===id);if(!o)return;
     const S=2.6,EYE=ROOM.y0+1.68*S,up=o.pitch>1;let p;
     if(up)p=new THREE.Vector3(o.c.x,0,o.id==='ceiling'?-20:o.c.z);
-    else if(o.n.z)p=new THREE.Vector3(o.c.x,0,o.c.z+(o.id==='christ'?2.4:4.6)*S);
-    else p=new THREE.Vector3(o.c.x+o.n.x*3.8*S,0,o.c.z);
+    else if(o.n.z)p=new THREE.Vector3(o.c.x,0,o.c.z+(o.id==='christ'?5.6:13.5)*S);
+    else p=new THREE.Vector3(o.c.x+o.n.x*11*S,0,o.c.z); // across the nave: the high panels are seen almost straight on
     this._collide(p);
     const dx=o.c.x-p.x,dz=o.c.z-p.z,hd=Math.hypot(dx,dz),dist=Math.hypot(hd,o.c.y-EYE);
     let yaw=up?o.yaw:Math.atan2(-dx,-dz),pitch=up?THREE.MathUtils.degToRad(89):Math.atan2(o.c.y-EYE,hd);
@@ -174,7 +174,11 @@ export class ChessScene{
     const b=this.body;b.position.set(w.pos.x,ROOM.y0,w.pos.z);b.rotation.y=w.yaw;
     this.legs[0].rotation.x=Math.sin(w.phase)*.45*amt;this.legs[1].rotation.x=-Math.sin(w.phase)*.45*amt;
     // hi-res fresco for whatever the pilgrim is standing near
-    if(now-w.hdT>500){w.hdT=now;let best=null,bd=12*S;for(const o of this.room.artworks()){if(o.pitch>1||o.id==='christ')continue;const d=Math.hypot(o.c.x-w.pos.x,o.c.z-w.pos.z)-(o.id==='judgement'?S:0);if(d<bd){bd=d;best=o}}if(best)this.room.wantHD(best.id)}}
+    if(now-w.hdT>500){w.hdT=now;this._hdLook(16*S)}}
+  _hdLook(max){const c=this.camera,fw=new THREE.Vector3();c.getWorldDirection(fw);let best=null,bd=max; // hi-res for the fresco being looked at
+    for(const o of this.room.artworks()){if(o.pitch>1)continue;const v=o.c.clone().sub(c.position),l=v.length();if(v.dot(fw)<.75*l)continue;
+      const s=l-(o.id==='judgement'?6*2.6:0);if(s<bd){bd=s;best=o}}
+    if(best)this.room.wantHD(best.id==='christ'?'judgement':best.id)}
   // ---------- Free cam: stable damped orbit around a target (board or an artwork); no roll, no inertia ----------
   _boardFocus(){const s=this.view.side==='b'?Math.PI:0,c=this.camera,hf=2*Math.atan(Math.tan(THREE.MathUtils.degToRad(c.fov)/2)*c.aspect);
     return {t:new THREE.Vector3(0,.3,0),yaw:s,pitch:THREE.MathUtils.degToRad(48),dist:THREE.MathUtils.clamp(5.6/Math.tan(hf/2),13,30),pmin:5,pmax:85,dmin:2.2,board:true}}
@@ -228,10 +232,7 @@ export class ChessScene{
     const d=this._dir(F.yaw,F.pitch),r=Math.min(F.dist,this._arm(F.t,d));
     c.up.set(0,1,0);c.position.copy(F.t).addScaledVector(d,r);c.lookAt(F.t);
     // hi-res fresco for whatever the camera is looking at closely
-    if(now-F.hdT>500){F.hdT=now;const fw=new THREE.Vector3();c.getWorldDirection(fw);let best=null,bd=14*2.6;
-      for(const o of this.room.artworks()){if(o.pitch>1)continue;const v=o.c.clone().sub(c.position),l=v.length();if(v.dot(fw)<.5*l)continue;
-        const s=l-(o.id==='judgement'?2.6:0);if(s<bd){bd=s;best=o}}
-      if(best)this.room.wantHD(best.id==='christ'?'judgement':best.id)}}
+    if(now-F.hdT>500){F.hdT=now;this._hdLook(16*2.6)}}
   _buildBoard(imgs){
     const {W,H}=BOARD;
     const ppu=this.mobile?128:160;

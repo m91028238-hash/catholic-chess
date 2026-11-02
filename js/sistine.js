@@ -1,7 +1,7 @@
 // The Sistine Chapel built as real geometry around the board (real proportions: 40.9 x 13.4 x 20.7 m),
 // textured with public-domain fresco scans from Wikimedia Commons (see ASSETS.md / Image credits).
 import * as THREE from 'three';
-import { FLOOR } from './basilica.js?v=12';
+import { FLOOR } from './basilica.js?v=13';
 
 const S=2.6;                        // scene units per metre
 export const ROOM={W:13.4*S,L:40.9*S,H:20.7*S,y0:FLOOR};
@@ -31,58 +31,50 @@ export class Sistine{
     this._floor();this._walls();this._vault();this._altar();this._transenna();
   }
   tex(c,rx=1,ry=1){const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.anisotropy=this.aniso;return t}
-  load(name,mat){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=12`,t=>{
+  load(name,mat){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=13`,t=>{
     t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
     mat.userData.base=t;(this.mats||(this.mats={}))[name]=mat;if(!(this.hdTex&&this.hdTex[name]))mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true;res(t)},undefined,()=>{console.warn('art',name);res(null)}))}
-  // ---------- floor: the chapel's Cosmatesque opus alexandrinum pavement (one panel = the chapel's width) ----------
-  // procedural: white marble bands interlacing porphyry and serpentine rotae (a quincunx), guilloche chains of
-  // small roundels, and fields of tiny tesserae; drawn twice: colour, then a matching roughness map
+  // ---------- floor: the chapel's Cosmatesque pavement (one panel = the chapel's width, repeated along the nave) ----------
+  // after the real floor: a centre aisle of large guilloche rotae (concentric marble bands), flanked by panels of grey/white
+  // lozenges in dark frames; drawn twice: colour, then a matching roughness map
   _floorCanvas(N,rough){
     const [c,x]=cv(N,N),u=N/13.4,R=()=>rnd();seed=11;
-    const G=rough?{white:'#5c5c5c',red:'#4a4a4a',green:'#4e4e4e',gold:'#6a6a6a',cream:'#626262',grout:'#c8c8c8',dark:'#555'}
-      :{white:'#ebe4d6',red:'#9b4d43',green:'#557a66',gold:'#c4a468',cream:'#ddd2bd',grout:'#a59985',dark:'#5a2320'};
-    x.fillStyle=G.grout;x.fillRect(0,0,N,N);
-    const tess=(path,s,pat)=>{x.save();path();x.clip();const g=Math.max(1,s*.09);
-      for(let j=-1;j*s<N;j++)for(let i=-1;i*s<N;i++){const X=i*s,Y=j*s,k=pat(i,j);
-        if(k[0]==='tri'){x.fillStyle=k[1];x.beginPath();x.moveTo(X+g,Y+s-g);x.lineTo(X+s/2,Y+g);x.lineTo(X+s-g,Y+s-g);x.fill();x.fillStyle=k[2];x.beginPath();x.moveTo(X+s/2+g,Y+g);x.lineTo(X+s+s/2-g,Y+g);x.lineTo(X+s-g*.2,Y+s-g);x.fill()}
-        else{x.fillStyle=k[1];x.fillRect(X+g/2,Y+g/2,s-g,s-g)}}x.restore()};
-    const marble=(path,col,veinA)=>{x.save();path();x.clip();x.fillStyle=col;x.fillRect(0,0,N,N);if(!rough){x.globalAlpha=veinA;x.strokeStyle='#8a7d6a';
-      for(let i=0;i<90;i++){x.lineWidth=.4+R()*1.2*N/2048;x.beginPath();let a=R()*N,b=R()*N;x.moveTo(a,b);for(let k=0;k<5;k++){a+=(R()-.5)*N*.08;b+=(R()-.5)*N*.08;x.lineTo(a,b)}x.stroke()}x.globalAlpha=1}x.restore()};
-    const stone=(cx,cy,r,col,spot)=>{x.fillStyle=col;x.beginPath();x.arc(cx,cy,r,0,7);x.fill();if(rough)return; // porphyry/serpentine: mottled
-      x.save();x.beginPath();x.arc(cx,cy,r,0,7);x.clip();for(let i=0;i<r*r/30;i++){x.fillStyle=spot;x.globalAlpha=.12+R()*.25;x.beginPath();x.arc(cx+(R()-.5)*2*r,cy+(R()-.5)*2*r,.6+R()*2*N/2048,0,7);x.fill()}
-      const gr=x.createRadialGradient(cx-r*.3,cy-r*.3,r*.1,cx,cy,r);gr.addColorStop(0,'rgba(255,255,255,.10)');gr.addColorStop(1,'rgba(0,0,0,.12)');x.globalAlpha=1;x.fillStyle=gr;x.fillRect(cx-r,cy-r,2*r,2*r);x.restore()};
-    const band=(draw,w)=>{x.lineWidth=w+3*N/2048;x.strokeStyle=G.grout;draw();x.stroke();x.lineWidth=w;x.strokeStyle=G.white;draw();x.stroke()};
-    const ts=.045*u,triP=(a,b)=>(i,j)=>['tri',(i+j)%2?a:b,G.white],chk=(a,b)=>(i,j)=>['sq',(i+j)%2?a:b];
-    const bw=.2*u; // white band width
-    // background field of tiny red/green squares
-    marble(()=>{x.beginPath();x.rect(0,0,N,N)},G.cream,.14); // field: cream marble slabs
-    x.strokeStyle=G.grout;x.lineWidth=Math.max(1,N/1400);for(let k=1;k<6;k++){x.beginPath();x.moveTo(k*N/6,0);x.lineTo(k*N/6,N);x.moveTo(0,k*N/6);x.lineTo(N,k*N/6);x.stroke()}
-    // outer frame: white band, triangle mosaic strip, white band
-    const B=.75*u;
-    marble(()=>{x.beginPath();x.rect(0,0,N,N);x.rect(B,N-B,N-2*B,-(N-2*B))},G.white,.18);
-    tess(()=>{x.beginPath();x.rect(bw,bw,N-2*bw,B-2*bw);x.rect(bw,N-B+bw,N-2*bw,B-2*bw);x.rect(bw,B-bw,B-2*bw,N-2*B+2*bw);x.rect(N-B+bw,B-bw,B-2*bw,N-2*B+2*bw)},ts*1.1,triP(G.red,G.green));
-    // central quincunx
-    const C=N/2,RQ=3.1*u,Rc=1.55*u,rs=.85*u,off=2.45*u;
-    x.save();x.beginPath();x.rect(C-RQ,C-RQ,2*RQ,2*RQ);x.clip();tess(()=>{x.beginPath();x.rect(C-RQ,C-RQ,2*RQ,2*RQ)},ts*1.25,triP(G.gold,G.red));x.restore();
-    const sats=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([a,b])=>[C+a*off,C+b*off]);
-    // guilloche ring linking the satellites around the central rota
-    band(()=>{x.beginPath();x.arc(C,C,off*Math.SQRT2*.5+Rc*.55,0,7)},bw*.8);
-    for(const [sx,sy] of sats){tess(()=>{x.beginPath();x.arc(sx,sy,rs+bw*1.6,0,7)},ts*.9,chk(G.green,G.white));band(()=>{x.beginPath();x.arc(sx,sy,rs+bw*1.6,0,7)},bw*.7);
-      x.fillStyle=G.white;x.beginPath();x.arc(sx,sy,rs+bw*.5,0,7);x.fill();stone(sx,sy,rs,G.green,'#9fc4a8')}
-    tess(()=>{x.beginPath();x.arc(C,C,Rc+bw*2.6,0,7)},ts,triP(G.red,G.green));band(()=>{x.beginPath();x.arc(C,C,Rc+bw*2.6,0,7)},bw);
-    x.fillStyle=G.white;x.beginPath();x.arc(C,C,Rc+bw*.7,0,7);x.fill();stone(C,C,Rc,G.red,'#e0a090');
-    band(()=>{x.beginPath();x.rect(C-RQ,C-RQ,2*RQ,2*RQ)},bw);
-    // guilloche chains of small rotae on each side of the quincunx (two white bands weaving between the circles)
-    const chain=(vert,pos)=>{const n=6,len=N-2*B-1.0*u,r=.42*u,st=len/n;
-      const P=k=>{const t=B+.5*u+st*(k+.5);return vert?[pos,t]:[t,pos]};
-      tess(()=>{x.beginPath();for(let k=0;k<n;k++){const [a,b]=P(k);x.moveTo(a+r+bw*1.4,b);x.arc(a,b,r+bw*1.4,0,7)}},ts*.9,triP(G.green,G.gold));
-      for(const sg of [1,-1])band(()=>{x.beginPath();for(let s=0;s<=60*n;s++){const t=s/(60*n)*n-.5,w=Math.cos(t*Math.PI)*(r+bw*1.4)*sg,L=B+.5*u+st*(t+.5);
-        const [a,b]=vert?[pos+w,L]:[L,pos+w];s?x.lineTo(a,b):x.moveTo(a,b)}},bw*.7);
-      for(let k=0;k<n;k++){const [a,b]=P(k);x.fillStyle=G.white;x.beginPath();x.arc(a,b,r+bw*.4,0,7);x.fill();stone(a,b,r,k%2?G.red:G.green,k%2?'#e0a090':'#9fc4a8')}};
-    const side=(B+C-RQ)/2;chain(true,side);chain(true,N-side);chain(false,side);chain(false,N-side);
-    // corner rotae
-    for(const [a,b] of [[side,side],[N-side,side],[side,N-side],[N-side,N-side]]){x.fillStyle=G.white;x.beginPath();x.arc(a,b,.62*u,0,7);x.fill();stone(a,b,.5*u,G.red,'#e0a090')}
-    if(!rough){x.globalAlpha=.06;x.fillStyle='#fff8e8';x.fillRect(0,0,N,N);x.globalAlpha=1} // soft contrast
+    const G=rough?{white:'#5a5a5a',grey:'#6a6a6a',dark:'#727272',red:'#4c4c4c',green:'#505050',grout:'#c0c0c0'}
+      :{white:'#e9e4d9',grey:'#a09b92',dark:'#55504a',red:'#93564b',green:'#5f766a',grout:'#8a8379'};
+    const ln=Math.max(1,N/1600);
+    const marble=(col,veinA)=>{x.fillStyle=col;x.fillRect(0,0,N,N);if(rough)return;x.globalAlpha=veinA;x.strokeStyle='#8a8070';
+      for(let i=0;i<120;i++){x.lineWidth=.4+R()*1.1*N/2048;x.beginPath();let a=R()*N,b=R()*N;x.moveTo(a,b);for(let k=0;k<5;k++){a+=(R()-.5)*N*.07;b+=(R()-.5)*N*.07;x.lineTo(a,b)}x.stroke()}x.globalAlpha=1};
+    const clipDo=(path,fn)=>{x.save();path();x.clip();fn();x.restore()};
+    const grid=(s,pat,rot=0)=>{x.save();if(rot){x.translate(N/2,N/2);x.rotate(rot);x.translate(-N/2,-N/2)}const g=Math.max(.8,s*.08),M=rot?N*.5:0;
+      for(let j=Math.floor(-M/s)-1;j*s<N+M;j++)for(let i=Math.floor(-M/s)-1;i*s<N+M;i++){x.fillStyle=pat(i,j);x.fillRect(i*s+g/2,j*s+g/2,s-g,s-g)}x.restore()};
+    const rect=(X,Y,W,H)=>()=>{x.beginPath();x.rect(X,Y,W,H)};
+    const disc=(cx,cy,r)=>()=>{x.beginPath();x.arc(cx,cy,r,0,7)};
+    const ring=(cx,cy,r0,r1,col)=>{x.fillStyle=col;x.beginPath();x.arc(cx,cy,r1,0,7);x.arc(cx,cy,r0,0,7,true);x.fill()};
+    marble(G.white,.16);
+    // side panels of lozenges (grey/white diamonds) in dark frames, two per tile along the nave
+    const sx0=.55*u,sw=3.85*u,frame=.12*u;
+    for(const X of [sx0,N-sx0-sw])for(const Y of [.25*u,N/2+.25*u]){const H=N/2-.5*u;
+      x.fillStyle=G.dark;x.fillRect(X,Y,sw,H);x.fillStyle=G.white;x.fillRect(X+frame,Y+frame,sw-2*frame,H-2*frame);
+      const ix=X+frame*2.2,iy=Y+frame*2.2,iw=sw-frame*4.4,ih=H-frame*4.4;x.fillStyle=G.grout;x.fillRect(ix,iy,iw,ih);
+      clipDo(rect(ix,iy,iw,ih),()=>grid(.3*u,(i,j)=>(i+j)%2?G.grey:G.white,Math.PI/4));
+      // a small porphyry/serpentine roundel in the middle of each panel
+      const cx=X+sw/2,cy=Y+H/2;ring(cx,cy,0,.62*u,G.dark);ring(cx,cy,0,.54*u,G.white);clipDo(disc(cx,cy,.5*u),()=>grid(.09*u,(i,j)=>(i+j)%2?G.dark:G.white));ring(cx,cy,0,.32*u,G.white);ring(cx,cy,0,.27*u,X<N/2?G.red:G.green)}
+    // centre aisle: big guilloche rotae linked by interlacing white bands, small rotae between them
+    const C=N/2,aw=4.3*u;x.fillStyle=G.dark;x.fillRect(C-aw/2,0,aw,N);x.fillStyle=G.white;x.fillRect(C-aw/2+frame,0,aw-2*frame,N);
+    clipDo(rect(C-aw/2+frame*2,0,aw-frame*4,N),()=>{x.fillStyle=G.grout;x.fillRect(0,0,N,N);grid(.11*u,(i,j)=>((i>>1)+(j>>1))%2?G.dark:G.grey)});
+    const RB=1.85*u,rs=.55*u,big=[N/4,3*N/4],small=[0,N/2,N];
+    // interlacing bands (two sine curves crossing between the rotae)
+    for(const sg of [1,-1]){x.lineWidth=.2*u+2*ln;x.strokeStyle=G.dark;const path=()=>{x.beginPath();for(let s=0;s<=400;s++){const t=s/400,yy=t*N,w=Math.sin(t*Math.PI*2)*(RB+.18*u)*sg;s?x.lineTo(C+w,yy):x.moveTo(C+w,yy)}};path();x.stroke();x.lineWidth=.2*u-2*ln;x.strokeStyle=G.white;path();x.stroke()}
+    for(const cy of big){ // concentric bands, like the photo's great roundels
+      const bands=[[1.0,G.dark],[.95,G.white],[.88,G.dark],[.84,G.white]];for(const [k,col] of bands)ring(C,cy,0,RB*k,col);
+      clipDo(()=>{x.beginPath();x.arc(C,cy,RB*.80,0,7);x.arc(C,cy,RB*.62,0,7,true)},()=>{x.fillStyle=G.grout;x.fillRect(0,0,N,N);grid(.085*u,(i,j)=>(i+j)%2?G.dark:G.white)});
+      for(const [k,col] of [[.62,G.white],[.58,G.dark],[.54,G.white],[.47,G.grey],[.43,G.white],[.36,G.dark],[.32,G.white]])ring(C,cy,0,RB*k,col);
+      clipDo(disc(C,cy,RB*.3),()=>{x.fillStyle=G.grout;x.fillRect(0,0,N,N);grid(.07*u,(i,j)=>(i+j)%2?G.grey:G.white,Math.PI/4)});
+      ring(C,cy,0,RB*.14,G.dark);ring(C,cy,0,RB*.11,G.red)}
+    for(const cy of small){ring(C,cy,0,rs+.1*u,G.dark);ring(C,cy,0,rs,G.white);ring(C,cy,0,rs*.8,G.dark);ring(C,cy,0,rs*.72,G.green)}
+    // wall-side borders
+    for(const X of [.12*u,N-.12*u-.18*u]){x.fillStyle=G.dark;x.fillRect(X,0,.18*u,N)}
+    if(!rough){x.globalAlpha=.07;x.fillStyle='#fff6e6';x.fillRect(0,0,N,N);x.globalAlpha=1} // soft contrast
     return c}
   _floor(){
     const big=this.big,N=big?4096:2048,col=this._floorCanvas(N,false),rgh=this._floorCanvas(N/2,true);
@@ -97,20 +89,20 @@ export class Sistine{
   // ---------- side walls: drapery, fresco tier, popes & windows tier ----------
   _walls(){
     const px=150,bw=Math.round(6.8*px);
-    // lower tier: painted silver-and-gold drapery (one bay per repeat)
-    const dh=Math.round(4.6*px),[dc,d]=cv(1024,dh);
-    for(let i=0;i<1024;i++){const s=.80+.13*Math.sin(i/1024*2*Math.PI*14)+.04*Math.sin(i*.37);const gold=(Math.floor(i/1024*14+.5)%2)===0;
-      const r=gold?[226,204,150]:[214,212,204];d.fillStyle=`rgb(${r.map(v=>Math.round(v*s)).join()})`;d.fillRect(i,0,1,dh)}
-    d.fillStyle='rgba(170,130,60,.35)';for(let yy=90;yy<dh-60;yy+=46)for(let xx=(yy/46%2)*23;xx<1024;xx+=46){d.beginPath();d.moveTo(xx,yy-9);d.lineTo(xx+6,yy);d.lineTo(xx,yy+9);d.lineTo(xx-6,yy);d.fill()}
+    // lower tier: painted gold-and-cream drapery curtains, trompe-l'oeil folds (one bay per repeat)
+    const dh=Math.round(3.6*px),[dc,d]=cv(1024,dh);
+    for(let i=0;i<1024;i++){const ph=i/1024*2*Math.PI*22,s=.80+.12*Math.sin(ph)+.05*Math.sin(ph*2.3+1)+.02*Math.sin(i*.37);
+      const r=[232,208,156];d.fillStyle=`rgb(${r.map(v=>Math.round(v*s)).join()})`;d.fillRect(i,0,1,dh)}
+    {const gl=d.createLinearGradient(0,0,0,dh);gl.addColorStop(0,'rgba(255,236,190,.35)');gl.addColorStop(.45,'rgba(255,236,190,0)');gl.addColorStop(1,'rgba(60,40,20,.18)');d.fillStyle=gl;d.fillRect(0,0,1024,dh)} // warm light from the cornice
     d.fillStyle='#a8803c';d.fillRect(0,0,1024,26);for(let i=0;i<1024;i+=64){d.beginPath();d.arc(i+32,26,32,0,Math.PI);d.fill()}
     d.fillStyle='#c09a4a';for(let i=0;i<1024;i+=6)d.fillRect(i,dh-34,3,30);d.fillStyle='#5a4a36';d.fillRect(0,dh-6,1024,6);
     const dt=this.tex(dc,6,1);
     // middle tier: plaster with painted pilasters at the bay edges
-    const fh=Math.round(5.4*px),[fc,f]=cv(bw,fh);f.fillStyle='#cbbd9f';f.fillRect(0,0,bw,fh);
-    for(const x0 of [0,bw-46]){f.fillStyle='#b9a37a';f.fillRect(x0,0,46,fh);f.fillStyle='rgba(90,70,40,.35)';for(let k=8;k<46;k+=10)f.fillRect(x0+k,30,3,fh-60);f.fillStyle='#a88a52';f.fillRect(x0,0,46,26);f.fillRect(x0,fh-26,46,26)}
+    const fh=Math.round(4.4*px),[fc,f]=cv(bw,fh);f.fillStyle='#cbbd9f';f.fillRect(0,0,bw,fh);
+    for(const x0 of [0,bw-48]){f.fillStyle='#d9cdb4';f.fillRect(x0,0,48,fh);f.fillStyle='rgba(120,95,55,.35)';for(let k=8;k<48;k+=10)f.fillRect(x0+k,30,3,fh-60);f.fillStyle='#b08f55';f.fillRect(x0,0,48,26);f.fillRect(x0,fh-26,48,26)} // painted pilasters between the panels
     const ft=this.tex(fc,6,1);
     // upper tier: arched window per bay flanked by painted niches (the popes' niches)
-    const uh=Math.round((SPRING-m(10.9))/S*px),[uc,u]=cv(bw,uh);u.fillStyle='#d2c4a6';u.fillRect(0,0,bw,uh);
+    const uh=Math.round((SPRING-m(8.9))/S*px),[uc,u]=cv(bw,uh);u.fillStyle='#d2c4a6';u.fillRect(0,0,bw,uh);
     const arch=(cx,top,w,h)=>{u.beginPath();u.moveTo(cx-w/2,top+h);u.lineTo(cx-w/2,top+w/2);u.arc(cx,top+w/2,w/2,Math.PI,0);u.lineTo(cx+w/2,top+h);u.closePath()};
     for(const nx of [bw*.17,bw*.83]){arch(nx,uh*.24,120,uh*.6);const gg=u.createLinearGradient(nx-60,0,nx+60,0);gg.addColorStop(0,'#6f5a3e');gg.addColorStop(.5,'#9b8158');gg.addColorStop(1,'#6f5a3e');u.fillStyle=gg;u.fill();u.strokeStyle='#b89a5c';u.lineWidth=6;u.stroke()}
     const ww=2.5*px,wt=Math.round(.25*px),wh=Math.round(4.0*px);
@@ -123,11 +115,12 @@ export class Sistine{
     for(const side of [-1,1]){
       const rot=side<0?Math.PI/2:-Math.PI/2,x=side*HW;
       const plane=(h0,h1,map)=>{const p=new THREE.Mesh(new THREE.PlaneGeometry(ROOM.L,h1-h0),basic({map}));p.rotation.y=rot;p.position.set(x,(h0+h1)/2,0);this.g.add(p)};
-      plane(m(0),m(4.6),dt);plane(m(5.0),m(10.4),ft);plane(m(10.9),SPRING,ut);
-      for(const [h0,h1,dep] of [[4.6,5.0,.5],[10.4,10.9,1.1]]){const b=new THREE.Mesh(new THREE.BoxGeometry(dep,(h1-h0)*S,ROOM.L),new THREE.MeshStandardMaterial({color:0xcdb88e,roughness:.85}));b.position.set(x-side*dep/2,m((h0+h1)/2),0);this.g.add(b)}
+      plane(m(0),m(3.6),dt);plane(m(4.0),m(8.4),ft);plane(m(8.9),SPRING,ut);
+      const glow=new THREE.Mesh(new THREE.BoxGeometry(.08,.05*S,ROOM.L),basic({color:0xfff0c8}));glow.position.set(x-side*.42,m(3.55),0);this.g.add(glow); // warm strip light under the cornice
+      for(const [h0,h1,dep] of [[3.6,4.0,.5],[8.4,8.9,1.1]]){const b=new THREE.Mesh(new THREE.BoxGeometry(dep,(h1-h0)*S,ROOM.L),new THREE.MeshStandardMaterial({color:0xcdb88e,roughness:.85}));b.position.set(x-side*dep/2,m((h0+h1)/2),0);this.g.add(b)}
       // the frescoes, in painted gilt frames
       (side>0?NORTH:SOUTH).forEach(([name,ar],i)=>{
-        const z=-HL+(i+.5)*BAY,h=2.1*S,w=h*ar,cy=m(2.0); // hung at eye level (centre ~2 m, bottom ~1 m)
+        const z=-HL+(i+.5)*BAY,w=5.7*S,h=w/ar,cy=m(6.0); // large panels in a continuous row above the drapery, as in the chapel
         for(const [pad,col,off] of [[.7,0x7a5e2c,.03],[.32,0xc9a85a,.05]]){const fr=new THREE.Mesh(new THREE.PlaneGeometry(w+pad*2,h+pad*2),basic({color:col}));fr.rotation.y=rot;fr.position.set(x-side*off,cy,z);this.g.add(fr)}
         const mat=basic({color:0x8a7a62});const fm=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);fm.rotation.y=rot;fm.position.set(x-side*.08,cy,z);this.g.add(fm);
         this.frescoMats.push([name,mat]);
@@ -139,12 +132,12 @@ export class Sistine{
     const eg=new THREE.ShapeGeometry(shp,24);
     const alt=new THREE.Mesh(eg,basic({color:0xc9bb9e}));alt.position.z=-HL;this.g.add(alt);
     const ent=new THREE.Mesh(eg,basic({color:0xc9bb9e}));ent.rotation.y=Math.PI;ent.position.z=HL;this.g.add(ent);
-    const ed=new THREE.Mesh(new THREE.PlaneGeometry(ROOM.W,4.6*S),basic({map:(()=>{const t=dt.clone();t.repeat.set(2,1);t.needsUpdate=true;return t})()}));ed.rotation.y=Math.PI;ed.position.set(0,m(2.3),HL-.05);this.g.add(ed);
+    const ed=new THREE.Mesh(new THREE.PlaneGeometry(ROOM.W,3.6*S),basic({map:(()=>{const t=dt.clone();t.repeat.set(2,1);t.needsUpdate=true;return t})()}));ed.rotation.y=Math.PI;ed.position.set(0,m(1.8),HL-.05);this.g.add(ed);
     const door=new THREE.Mesh(new THREE.PlaneGeometry(3*S,5*S),basic({color:0x4a3322}));door.rotation.y=Math.PI;door.position.set(0,m(2.5),HL-.1);this.g.add(door);
     // The Last Judgement (13.7 x 12 m) on the altar wall
-    const lh=3.3*S,lw=lh*3840/4229; // scaled to hang at eye level (centre ~2.2 m) behind the free-standing altar
+    const lw=12.2*S,lh=lw*3072/2789; // the whole altar wall (12.2 x 13.4 m), bottom ~2 m above the floor behind the altar
     this.ljMat=basic({color:0x8a7a62});
-    const lj=new THREE.Mesh(new THREE.PlaneGeometry(lw,lh),this.ljMat);lj.position.set(0,m(.55)+lh/2,-HL+.06);this.g.add(lj);
+    const lj=new THREE.Mesh(new THREE.PlaneGeometry(lw,lh),this.ljMat);lj.position.set(0,m(2.0)+lh/2,-HL+.06);this.g.add(lj);
     this.lj={c:lj.position.clone(),w:lw,h:lh};
   }
   _vault(){
@@ -157,7 +150,7 @@ export class Sistine{
     this.g.add(new THREE.Mesh(g,this.ceilMat));
   }
   _altar(){
-    const z=-HL+10*S,marble=new THREE.MeshStandardMaterial({color:0xe6dccb,roughness:.5});
+    const z=-HL+3.2*S,marble=new THREE.MeshStandardMaterial({color:0xe6dccb,roughness:.5});
     const gold=new THREE.MeshStandardMaterial({color:0xd4a64a,metalness:1,roughness:.3,envMap:this.scene.environment});
     const step=new THREE.Mesh(new THREE.BoxGeometry(8*S,.5*S,3.4*S),new THREE.MeshStandardMaterial({color:0xb7ab98,roughness:.6}));step.position.set(0,m(.25),z-.4);this.g.add(step);
     const alt=new THREE.Mesh(new THREE.BoxGeometry(3.6*S,1*S,1.2*S),marble);alt.position.set(0,m(1),z-1.2);this.g.add(alt);
@@ -179,8 +172,8 @@ export class Sistine{
       const t=this.tex(c,1,1);const gr=new THREE.Mesh(new THREE.PlaneGeometry(w,2.2*S),basic({map:t,transparent:true,alphaTest:.3,side:THREE.DoubleSide}));gr.position.set(sx*(1.6*S+w/2),m(2.5),z);this.g.add(gr);
       const cap=new THREE.Mesh(new THREE.BoxGeometry(w,.12*S,.3*S),marble);cap.position.set(sx*(1.6*S+w/2),m(3.65),z);this.g.add(cap);
       for(let k=0;k<3;k++){const cd=new THREE.Mesh(new THREE.CylinderGeometry(.06*S,.12*S,.6*S,8),marble);cd.position.set(sx*(2.2*S+k*(w-1.2*S)/2),m(4.0),z);this.g.add(cd)}}
-    const loft=new THREE.Mesh(new THREE.BoxGeometry(1.2*S,1.3*S,3.4*S),marble);loft.position.set(HW-.6*S,m(4.5),z+4*S);this.g.add(loft);
-    const lf=new THREE.Mesh(new THREE.PlaneGeometry(3.2*S,.9*S),basic({color:0xc9a85a}));lf.rotation.y=-Math.PI/2;lf.position.set(HW-1.21*S,m(4.5),z+4*S);this.g.add(lf);
+    const loft=new THREE.Mesh(new THREE.BoxGeometry(1.2*S,1.3*S,3.4*S),marble);loft.position.set(HW-.6*S,m(3.0),z+4*S);this.g.add(loft);
+    const lf=new THREE.Mesh(new THREE.PlaneGeometry(3.2*S,.9*S),basic({color:0xc9a85a}));lf.rotation.y=-Math.PI/2;lf.position.set(HW-1.21*S,m(3.0),z+4*S);this.g.add(lf);
   }
   // camera targets for the Free-cam quick-jump list: centre, facing normal (into the room), size, view yaw/pitch
   artworks(){
@@ -197,7 +190,7 @@ export class Sistine{
     const L=this.hdList||(this.hdList=[]),T=this.hdTex||(this.hdTex={}),i=L.indexOf(name);
     if(i>=0){L.splice(i,1);L.push(name);return}
     L.push(name);while(L.length>2)this._dropHD(L.shift());
-    this.loader.load(`assets/sistine/hd/${name}.jpg?v=12`,t=>{const mat=this.mats&&this.mats[name];if(!L.includes(name)||!mat){t.dispose();return}
+    this.loader.load(`assets/sistine/hd/${name}.jpg?v=13`,t=>{const mat=this.mats&&this.mats[name];if(!L.includes(name)||!mat){t.dispose();return}
       t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
       T[name]=t;mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true},undefined,()=>{const k=L.indexOf(name);if(k>=0)L.splice(k,1)})}
   _dropHD(name){const t=this.hdTex[name];if(!t)return;const mat=this.mats[name];if(mat&&mat.userData.base){mat.map=mat.userData.base;mat.needsUpdate=true}t.dispose();delete this.hdTex[name]}
