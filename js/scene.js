@@ -1,10 +1,10 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=13';
-import { pieceGeometries } from './pieces.js?v=13';
-import { buildPlinth } from './basilica.js?v=13';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=13';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=14';
+import { pieceGeometries } from './pieces.js?v=14';
+import { buildPlinth } from './basilica.js?v=14';
+import { Sistine, ROOM, ceilingAt } from './sistine.js?v=14';
 
 const TOP=0.32;
 const FILES='abcdefgh';
@@ -27,7 +27,7 @@ export class ChessScene{
     const sc=this.scene=new THREE.Scene();
     sc.background=new THREE.Color(0x3a2a1c);
     const pm=new THREE.PMREMGenerator(r);this.env=sc.environment=pm.fromScene(new RoomEnvironment(),0.04).texture;sc.environmentIntensity=0.45;
-    this.camera=new THREE.PerspectiveCamera(36,1,0.1,420);
+    this.camera=new THREE.PerspectiveCamera(36,1,0.2,420); // near 0.2: better depth precision on 16-bit-depth mobile GPUs
     const ctl=this.controls=new OrbitControls(this.camera,r.domElement);
     ctl.enableDamping=true;ctl.dampingFactor=.12;ctl.enablePan=false;ctl.minDistance=5;ctl.maxDistance=42;
     ctl.enableRotate=false;ctl.maxPolarAngle=1.4;ctl.minPolarAngle=0.02;this.camMode=({Free:'Walk'})[localStorage.getItem('camMode')]||localStorage.getItem('camMode')||'Player';ctl.target.set(0,0.3,0);ctl.rotateSpeed=.7;
