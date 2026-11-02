@@ -1,10 +1,10 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=11';
-import { pieceGeometries } from './pieces.js?v=11';
-import { buildPlinth } from './basilica.js?v=11';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=11';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=12';
+import { pieceGeometries } from './pieces.js?v=12';
+import { buildPlinth } from './basilica.js?v=12';
+import { Sistine, ROOM, ceilingAt } from './sistine.js?v=12';
 
 const TOP=0.32;
 const FILES='abcdefgh';
@@ -150,7 +150,7 @@ export class ChessScene{
     w.fovTo=THREE.MathUtils.clamp(THREE.MathUtils.radToDeg(need),15,75);
     const path=this._route(w.pos,p),L=[0];for(let i=1;i<path.length;i++)L.push(L[i-1]+path[i].distanceTo(path[i-1]));
     const len=L[L.length-1];
-    w.glide={path,L,len,t0:performance.now(),dur:THREE.MathUtils.clamp(600+len*28,700,3200),y0:w.yawT,y1:yaw,p0:w.pitchT,p1:pitch};
+    w.glide={path,L,len,t0:performance.now(),dur:THREE.MathUtils.clamp(400+len*18.7,470,2130),y0:w.yawT,y1:yaw,p0:w.pitchT,p1:pitch};
     this.room.wantHD(o.id==='christ'?'judgement':o.id)}
   _walkStep(now){const w=this.walk,c=this.camera,S=2.6,dt=Math.min(.05,(now-(this._lastT||now))/1000);
     if(w.glide){const g=w.glide,t=Math.min(1,Math.max(0,(now-g.t0)/g.dur)),e=easeIO(t),s=e*g.len;
@@ -161,14 +161,14 @@ export class ChessScene{
     let ix=this.joy.x+(has('KeyD','ArrowRight')?1:0)-(has('KeyA','ArrowLeft')?1:0),iz=this.joy.y+(has('KeyS','ArrowDown')?1:0)-(has('KeyW','ArrowUp')?1:0);
     const il=Math.hypot(ix,iz);if(il>1){ix/=il;iz/=il}
     if(il>.01)w.glide=null;
-    if(!w.glide){const sp=1.6*S*(has('ShiftLeft','ShiftRight')?2.2:1),sy=Math.sin(w.yaw),cy=Math.cos(w.yaw);
+    if(!w.glide){const sp=2.4*S*(has('ShiftLeft','ShiftRight')?2.2:1),sy=Math.sin(w.yaw),cy=Math.cos(w.yaw);
       const tx=(cy*ix+sy*iz)*sp,tz=(-sy*ix+cy*iz)*sp,k=1-Math.exp(-dt*9);
       w.vel.x+=(tx-w.vel.x)*k;w.vel.z+=(tz-w.vel.z)*k;w.pos.addScaledVector(w.vel,dt);this._collide(w.pos)}
     // smoothed look
     const lk=1-Math.exp(-dt*20);w.yaw+=(w.yawT-w.yaw)*lk;w.pitch+=(w.pitchT-w.pitch)*lk;
     w.fov+=(w.fovTo-w.fov)*(1-Math.exp(-dt*12));if(Math.abs(w.fovTo-w.fov)<.01)w.fov=w.fovTo;
     // gait: subtle head-bob and leg swing
-    const spd=Math.hypot(w.vel.x,w.vel.z),amt=Math.min(1,spd/(1.6*S));w.phase+=dt*spd*2.2;
+    const spd=Math.hypot(w.vel.x,w.vel.z),amt=Math.min(1,spd/(2.4*S));w.phase+=dt*spd*2.2;
     c.position.set(w.pos.x,ROOM.y0+1.68*S+Math.sin(w.phase*2)*.018*S*amt,w.pos.z);c.rotation.set(w.pitch,w.yaw,0,'YXZ');
     if(c.fov!==w.fov){c.fov=w.fov;c.updateProjectionMatrix()}
     const b=this.body;b.position.set(w.pos.x,ROOM.y0,w.pos.z);b.rotation.y=w.yaw;
