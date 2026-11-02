@@ -22,4 +22,12 @@
   - The Resurrection of Christ — Hendrick van den Broeck, 1572–85 (entrance wall). Public domain. https://commons.wikimedia.org/wiki/File:Hendrick_van_den_Broeck_-_The_resurrection_of_Christ.jpg
   - The Dispute over the Body of Moses — Matteo da Lecce, 1572–85 (entrance wall). Public domain. https://commons.wikimedia.org/wiki/File:Matteo_da_Lecce_-_Disputa_junto_al_cuerpo_de_Mois%C3%A9s_(Capilla_Sixtina,_Roma,_1572-85).jpg
   - Lunettes: Eleazar and Mathan; Hezekiah, Manasseh, Amon — Michelangelo, 1508–12. Public domain. https://commons.wikimedia.org/wiki/File:Michelangelo_-_Sistine_Chapel_-_Lunette_Eleazar_and_Mathan_-_WGA.jpg , https://commons.wikimedia.org/wiki/File:Michelangelo_-_Sistine_Chapel_ceiling_-_Lunette_%22Hezekiah_-_Manasseh_-_Amon%22.jpg
-- Drapery, gilded grotesque pilasters, leaded windows, popes' niches, entrance door, railing, screen grille and organ — procedural canvases made for this game.
+- Real-photo wall textures (v18; cropped, perspective-rectified, colour-graded, made tileable; derivatives under the same licence):
+  - Lower-wall gold drapery (assets/sistine/drape.jpg): pleats from "Vaticano 2011 (72).JPG" — CC BY-SA 3.0, https://commons.wikimedia.org/wiki/File:Vaticano_2011_(72).JPG ; swagged top band from "Geschichten aus dem Leben Christi.jpg" — CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Geschichten_aus_dem_Leben_Christi.jpg
+  - Gilded grotesque pilaster (pilaster.jpg): "SZ Romtour Sixtinische Kapelle 18.jpg" — CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:SZ_Romtour_Sixtinische_Kapelle_18.jpg
+  - Frieze under the frescoes (frieze.jpg) and the hi-res Temptations of Christ (hd/temptations.jpg): "SZ Romtour Sixtinische Kapelle 23.jpg" — CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:SZ_Romtour_Sixtinische_Kapelle_23.jpg
+  - Entrance-wall window tier with popes, painted bullseye windows and lunettes (entrance-tier.jpg), the side-wall popes (pope1–3.jpg) and leaded glass (window.jpg): "SZ Romtour Sixtinische Kapelle 25.jpg" — CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:SZ_Romtour_Sixtinische_Kapelle_25.jpg
+  - Altar-wall dado under the Last Judgement (dado.jpg): "Altar in der Sixtinischen Kapelle.jpg" — CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Altar_in_der_Sixtinischen_Kapelle.jpg
+  - Hi-res Calling of the Apostles (hd/calling.jpg): "Calling of the apostles by Domenico Ghirlandaio Roma.jpg" — CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Calling_of_the_apostles_by_Domenico_Ghirlandaio_Roma.jpg
+  - Hi-res Last Judgement, Resurrection, Keys, Trials, Testament (hd/) — the Commons originals listed above, downsized to max 4096 px.
+- Entrance door, railing, screen grille, organ, frames and window reveals — procedural canvases made for this game.
