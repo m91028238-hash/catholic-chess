@@ -1,7 +1,7 @@
 import { Chess } from '../vendor/chess.js?v=2';
-import { ChessScene } from './scene.js?v=14';
-import * as AI from './ai.js?v=14';
-import { play, setSound, unlockAudio } from './sound.js?v=14';
+import { ChessScene } from './scene.js?v=15';
+import * as AI from './ai.js?v=15';
+import { play, setSound, unlockAudio } from './sound.js?v=15';
 
 const $=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
@@ -280,3 +280,13 @@ window.CC={_scene:scene,
   promo:(p)=>{const b=document.querySelector(`#promoBtns [data-p="${p}"]`);b&&b.click()},
   engine:()=>AI.engineStatus(),scene,
 };
+
+// Full screen (hides the browser bars), with the webkit fallback; in landscape the 3D view fills the screen
+{const de=document.documentElement,b=$('fsBtn'),fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
+  const lock=()=>{try{if(fsEl()&&screen.orientation&&screen.orientation.lock&&innerWidth>innerHeight)screen.orientation.lock('landscape').catch(()=>{})}catch(_){}};
+  const upd=()=>{document.body.classList.toggle('fs',!!fsEl());b.textContent=fsEl()?'✕':'⛶';lock();setTimeout(()=>scene.resize(),150)};
+  if(!(de.requestFullscreen||de.webkitRequestFullscreen))b.hidden=true;
+  b.onclick=()=>{if(fsEl()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);try{screen.orientation.unlock()}catch(_){}}
+    else{const r=(de.requestFullscreen||de.webkitRequestFullscreen).call(de,{navigationUI:'hide'});if(r&&r.then)r.then(lock).catch(()=>{})}};
+  document.addEventListener('fullscreenchange',upd);document.addEventListener('webkitfullscreenchange',upd);
+  addEventListener('orientationchange',()=>setTimeout(()=>{lock();scene.resize()},200))}

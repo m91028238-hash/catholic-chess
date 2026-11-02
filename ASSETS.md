@@ -19,3 +19,7 @@
   - Moses Receiving the Tables of the Law — Cosimo Rosselli, 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Cosimo_Rosselli_le_Tavole_della_Legge.jpg
   - The Punishment of the Sons of Korah — Sandro Botticelli, 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Botticcelli,_Sandro_-_The_Punishment_of_Korah_and_the_Stoning_of_Moses_and_Aaron_-_1481-82.jpg
   - The Testament and Death of Moses — Luca Signorelli (and Bartolomeo della Gatta), 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Signorelli,_Luca_-_Moses%27s_Testament_and_Death_-_1481-82.jpg
+  - The Resurrection of Christ — Hendrick van den Broeck, 1572–85 (entrance wall). Public domain. https://commons.wikimedia.org/wiki/File:Hendrick_van_den_Broeck_-_The_resurrection_of_Christ.jpg
+  - The Dispute over the Body of Moses — Matteo da Lecce, 1572–85 (entrance wall). Public domain. https://commons.wikimedia.org/wiki/File:Matteo_da_Lecce_-_Disputa_junto_al_cuerpo_de_Mois%C3%A9s_(Capilla_Sixtina,_Roma,_1572-85).jpg
+  - Lunettes: Eleazar and Mathan; Hezekiah, Manasseh, Amon — Michelangelo, 1508–12. Public domain. https://commons.wikimedia.org/wiki/File:Michelangelo_-_Sistine_Chapel_-_Lunette_Eleazar_and_Mathan_-_WGA.jpg , https://commons.wikimedia.org/wiki/File:Michelangelo_-_Sistine_Chapel_ceiling_-_Lunette_%22Hezekiah_-_Manasseh_-_Amon%22.jpg
+- Drapery, gilded grotesque pilasters, leaded windows, popes' niches, entrance door, railing, screen grille and organ — procedural canvases made for this game.

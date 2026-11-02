@@ -1,10 +1,10 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=14';
-import { pieceGeometries } from './pieces.js?v=14';
-import { buildPlinth } from './basilica.js?v=14';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=14';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=15';
+import { pieceGeometries } from './pieces.js?v=15';
+import { buildPlinth } from './basilica.js?v=15';
+import { Sistine, ROOM, ceilingAt } from './sistine.js?v=15';
 
 const TOP=0.32;
 const FILES='abcdefgh';
@@ -124,7 +124,7 @@ export class ChessScene{
   backToBoard(){this.setCamMode('Player');this.onCamChange&&this.onCamChange('Player')}
   // obstacles (x0,x1,z0,z1): the chess table, the altar steps, the two halves of the marble screen
   get _boxes(){if(!this._bx){const S=2.6,HW=ROOM.W/2,HL=ROOM.L/2,az=-HL+3.2*S-.4,tz=HL-14.5*S;
-    this._bx=[[-6.9,6.9,-4.9,4.9],[-4*S,4*S,az-1.7*S,az+1.7*S],[1.6*S,HW,tz-.25*S,tz+.25*S],[-HW,-1.6*S,tz-.25*S,tz+.25*S]]}return this._bx}
+    this._bx=[[-6.9,6.9,-4.9,4.9],[-4*S,4*S,az-1.7*S,az+1.7*S],[1.6*S,HW,tz-.25*S,tz+.25*S],[-HW,-1.6*S,tz-.25*S,tz+.25*S]];if(this.room&&this.room.organ)this._bx.push(this.room.organ)}return this._bx}
   _collide(p){const S=2.6,r=.3*S,M=.35*S,X=ROOM.W/2-M,Z=ROOM.L/2-M,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
     for(const [x0,x1,z0,z1] of this._boxes){const cx=cl(p.x,x0,x1),cz=cl(p.z,z0,z1),dx=p.x-cx,dz=p.z-cz,d=Math.hypot(dx,dz);if(d>=r)continue;
       if(d>1e-6){p.x=cx+dx/d*r;p.z=cz+dz/d*r}
