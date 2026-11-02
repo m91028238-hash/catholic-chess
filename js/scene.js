@@ -1,10 +1,10 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=15';
-import { pieceGeometries } from './pieces.js?v=15';
-import { buildPlinth } from './basilica.js?v=15';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=15';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=16';
+import { pieceGeometries } from './pieces.js?v=16';
+import { buildPlinth } from './basilica.js?v=16';
+import { Sistine, ROOM, ceilingAt } from './sistine.js?v=16';
 
 const TOP=0.32;
 const FILES='abcdefgh';

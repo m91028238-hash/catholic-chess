@@ -1,7 +1,7 @@
 // The Sistine Chapel built as real geometry around the board (real proportions: 40.9 x 13.4 x 20.7 m),
 // textured with public-domain fresco scans from Wikimedia Commons (see ASSETS.md / Image credits).
 import * as THREE from 'three';
-import { FLOOR } from './basilica.js?v=15';
+import { FLOOR } from './basilica.js?v=16';
 
 const S=2.6;                        // scene units per metre
 export const ROOM={W:13.4*S,L:40.9*S,H:20.7*S,y0:FLOOR};
@@ -30,12 +30,15 @@ export class Sistine{
     this.big=mx>=8192&&!mob;this.bigCeil=this.cap>=4096;
     this.loader=new THREE.TextureLoader();
     const g=this.g=new THREE.Group();scene.add(g);
-    this._floor();this._walls();this._vault();this._altar();this._transenna();
+    this._floor();
+    // the old modelled walls/vault/screen are built hidden (they only supply artwork positions); the room you see is the real-photo panorama
+    const real=this.g;this.g=new THREE.Group();this.g.visible=false;this._walls();this._vault();this._transenna();this.g=real;
+    this._altar();this._pano();
   }
   tex(c,rx=1,ry=1){const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.anisotropy=this.aniso;return t}
   fit(t){const im=t.image,c=this.cap;if(!im||!im.width||(im.width<=c&&im.height<=c))return t; // downscale oversized images
     const k=c/Math.max(im.width,im.height),[cc,x]=cv(Math.round(im.width*k),Math.round(im.height*k));x.drawImage(im,0,0,cc.width,cc.height);t.image=cc;t.needsUpdate=true;return t}
-  load(name,mat,retry=1){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=15`,t=>{
+  load(name,mat,retry=1){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=16`,t=>{
     this.fit(t);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
     mat.userData.base=t;(this.mats||(this.mats={}))[name]=mat;if(!(this.hdTex&&this.hdTex[name]))mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true;res(t)},undefined,e=>{console.warn('Sistine: could not load',name,e);if(retry)setTimeout(()=>this.load(name,mat,0).then(res),1500);else res(null)}))}
   // ---------- floor: the chapel's Cosmatesque pavement (one panel = the chapel's width, repeated along the nave) ----------
@@ -155,7 +158,7 @@ export class Sistine{
     const pw=bw*.06;this._pilaster(f,X,0,pw,fh);this._pilaster(f,X+bw-pw,0,pw,fh)}
   _marble(N=256){const [c,x]=cv(N,N);x.fillStyle='#ece5d6';x.fillRect(0,0,N,N);seed=5;x.strokeStyle='rgba(120,110,95,.35)';
     for(let i=0;i<26;i++){x.lineWidth=.5+rnd()*1.5;x.beginPath();let a=rnd()*N,b=rnd()*N;x.moveTo(a,b);for(let k=0;k<6;k++){a+=(rnd()-.5)*N*.3;b+=(rnd()-.3)*N*.2;x.lineTo(a,b)}x.stroke()}return c}
-  _img(name,fn){const im=new Image();im.onload=()=>fn(im);im.onerror=()=>console.warn('Sistine: could not load',name);im.src=`assets/sistine/${name}.jpg?v=15`}
+  _img(name,fn){const im=new Image();im.onload=()=>fn(im);im.onerror=()=>console.warn('Sistine: could not load',name);im.src=`assets/sistine/${name}.jpg?v=16`}
   // ---------- side walls: drapery, fresco tier, popes & windows tier ----------
   _walls(){
     const px=150,bw=Math.round(6.8*px);
@@ -255,6 +258,34 @@ export class Sistine{
     const Yv=new THREE.Vector3(0,1,0);
     for(let i=0;i<6;i++){const z=-HL+(i+.5)*BAY,a=new THREE.Vector3(-HW+.3,m(12.3),z),b=new THREE.Vector3(HW*.25,y0,z+2.5*S),d=b.clone().sub(a),L=d.length();d.normalize();
       for(const r of [0,Math.PI/2]){const geo=new THREE.PlaneGeometry(2.2*S,L).rotateY(r);const ms=new THREE.Mesh(geo,mat);ms.quaternion.setFromUnitVectors(Yv,d.clone().negate());ms.position.copy(a).addScaledVector(d,L/2);ms.renderOrder=5;this.g.add(ms)}}}
+  // Real-photo Sistine Chapel: one continuous equirectangular image (assets/sistine/pano-*.jpg, built from free-licensed photos,
+  // see ASSETS.md) projected onto the chapel's walls and vault by direction from the point it was rendered from (1.6 m above the board).
+  _pano(){
+    const C=new THREE.Vector3(0,m(1.6),0);
+    const mat=this.panoMat=new THREE.ShaderMaterial({uniforms:{map:{value:null},C:{value:C},gain:{value:1.0}},side:THREE.DoubleSide,toneMapped:false,
+      vertexShader:'varying vec3 vP;void main(){vec4 w=modelMatrix*vec4(position,1.);vP=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}',
+      fragmentShader:`uniform sampler2D map;uniform vec3 C;uniform float gain;varying vec3 vP;
+        void main(){vec3 d=normalize(vec3(vP.x-C.x,vP.y-C.y,-(vP.z-C.z)));
+          float u=atan(d.x,d.z)*0.15915494+0.5,v=0.5+asin(clamp(d.y,-1.,1.))*0.31830989;
+          float u2=fract(u+0.5);vec2 gx=vec2(dFdx(u),dFdx(v)),gy=vec2(dFdy(u),dFdy(v)),hx=vec2(dFdx(u2),dFdx(v)),hy=vec2(dFdy(u2),dFdy(v));
+          if(abs(hx.x)<abs(gx.x)){gx=hx;}if(abs(hy.x)<abs(gy.x)){gy=hy;} // no seam line at the back of the panorama
+          vec4 c=textureGrad(map,vec2(u,v),gx,gy);gl_FragColor=vec4(c.rgb*gain,1.);
+          #include <colorspace_fragment>
+        }`});
+    const add=g=>{const me=new THREE.Mesh(g,mat);this.g.add(me);return me};
+    for(const side of [-1,1]){const p=new THREE.PlaneGeometry(ROOM.L,SPRING-y0+.05);p.rotateY(side<0?Math.PI/2:-Math.PI/2);p.translate(side*HW,(y0+SPRING)/2,0);add(p)}
+    for(const z of [-HL,HL]){const g=this._endGeo();g.translate(0,0,z);add(g)}
+    const n=64,pos=[],idx=[];
+    for(let i=0;i<=n;i++){const a=-VA+2*VA*i/n,x=VR*Math.sin(a),y=VYC+VR*Math.cos(a);for(const z of [-HL,HL])pos.push(x,y,z)}
+    for(let i=0;i<n;i++){const a=i*2;idx.push(a,a+2,a+1,a+1,a+2,a+3)}
+    const vg=new THREE.BufferGeometry();vg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));vg.setIndex(idx);add(vg);
+    const mx=this.r.capabilities.maxTextureSize||2048,hi=mx>=4096?4096:2048;
+    const set=(t)=>{t.colorSpace=THREE.SRGBColorSpace;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.anisotropy=Math.min(8,this.aniso);
+      const old=mat.uniforms.map.value;mat.uniforms.map.value=t;if(old)old.dispose()};
+    this.loader.load('assets/sistine/pano-1024.jpg?v=16',t=>{if(!this.panoHi)set(t); // low-res first, then the sharp one
+      this.loader.load(`assets/sistine/pano-${hi}.jpg?v=16`,t2=>{this.panoHi=true;set(t2);window.__panoLoaded=hi},undefined,e=>console.warn('Sistine: hi-res panorama failed, keeping low-res',e))},
+      undefined,e=>console.warn('Sistine: panorama failed',e));
+  }
   _vault(){
     const n=64,pos=[],uv=[],idx=[];
     for(let i=0;i<=n;i++){const a=-VA+2*VA*i/n,x=VR*Math.sin(a),y=VYC+VR*Math.cos(a);
@@ -317,14 +348,16 @@ export class Sistine{
     return top.concat(this.arts);
   }
   // Hi-res originals, only for the one or two frescoes the pilgrim is looking at (keeps phone GPU memory low)
-  wantHD(name){if(!HD.includes(name)||this.r.capabilities.maxTextureSize<3072)return;
+  wantHD(name){return;if(!HD.includes(name)||this.r.capabilities.maxTextureSize<3072)return;
     const L=this.hdList||(this.hdList=[]),T=this.hdTex||(this.hdTex={}),i=L.indexOf(name);
     if(i>=0){L.splice(i,1);L.push(name);return}
     L.push(name);while(L.length>2)this._dropHD(L.shift());
-    this.loader.load(`assets/sistine/hd/${name}.jpg?v=15`,t=>{const mat=this.mats&&this.mats[name];if(!L.includes(name)||!mat){t.dispose();return}
+    this.loader.load(`assets/sistine/hd/${name}.jpg?v=16`,t=>{const mat=this.mats&&this.mats[name];if(!L.includes(name)||!mat){t.dispose();return}
       this.fit(t);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
       T[name]=t;mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true},undefined,e=>{console.warn('Sistine: hi-res failed, keeping low-res',name,e);const k=L.indexOf(name);if(k>=0)L.splice(k,1)})} // low-res stays on until hi-res succeeds
   _dropHD(name){const t=this.hdTex[name];if(!t)return;const mat=this.mats[name];if(mat&&mat.userData.base){mat.map=mat.userData.base;mat.needsUpdate=true}t.dispose();delete this.hdTex[name]}
-  loadCeiling(){return this.load(this.bigCeil?'ceiling-3129':'ceiling-2048',this.ceilMat)}
-  loadArt(){return Promise.all([this.load('judgement',this.ljMat),...this.frescoMats.map(([n,mt])=>this.load(n,mt))])}
+  loadCeiling(){return Promise.resolve()}
+  _oldLoadCeiling(){return this.load(this.bigCeil?'ceiling-3129':'ceiling-2048',this.ceilMat)}
+  loadArt(){return Promise.resolve()}
+  _oldLoadArt(){return Promise.all([this.load('judgement',this.ljMat),...this.frescoMats.map(([n,mt])=>this.load(n,mt))])}
 }

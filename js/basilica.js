@@ -1,6 +1,6 @@
 // The marble-and-gold table under the board (the surroundings are the Sistine Chapel, see sistine.js).
 import * as THREE from 'three';
-import { canvasTex } from './textures.js?v=15';
+import { canvasTex } from './textures.js?v=16';
 
 export const FLOOR=-2.05; // table top (y=0) 0.79 m above the chapel floor (2.6 units per metre)
 const cv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return [c,c.getContext('2d')]};

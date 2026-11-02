@@ -4,7 +4,12 @@
 - Board engraving, side panels (Chi-Rho/IHS and St Benedict medal), wood textures, Staunton pieces, sounds — procedural, made for this game.
 - Game code — GPLv3 (LICENSE).
 
-- Sistine Chapel art (assets/sistine/; larger copies of the Last Judgement and six wall frescoes in assets/sistine/hd/, loaded only near that artwork), via Wikimedia Commons, resized/recompressed:
+- Sistine Chapel panorama (assets/sistine/pano-1024/2048/4096.jpg) — the room around the board. A 360° equirectangular image made for this game (re-projected onto the chapel's 40.9 × 13.4 × 20.7 m geometry from the board position, blended, lower side walls filled by repeating real drapery bays) from these free-licensed photographs of the EMPTY chapel (no visitors):
+  - "Chapelle sixtine2.jpg" (towards the altar) — Antoine Taveneaux, CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:Chapelle_sixtine2.jpg
+  - "Sistine Chapel - the oher side" (towards the entrance) — Beyond Forgetting (Flickr), CC BY 2.0. https://commons.wikimedia.org/wiki/File:Sistine_Chapel_-_the_oher_side_-_Flickr_-_Beyond_Forgetting.jpg
+  - plus the ceiling composite (CC BY-SA 3.0) and the Last Judgement scan (PD) listed below.
+  The derived panorama is licensed CC BY-SA 3.0. No Vatican Museums imagery is used: their site terms forbid reproduction (museivaticani.va copyright page).
+- Older per-fresco art (still in the repo; the modelled room is no longer shown) (assets/sistine/; larger copies of the Last Judgement and six wall frescoes in assets/sistine/hd/, loaded only near that artwork), via Wikimedia Commons, resized/recompressed:
   - The Sistine Chapel ceiling — Michelangelo, 1508–12. Fresco public domain; composite photo CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:CAPPELLA_SISTINA_Ceiling.jpg
   - The Last Judgement — Michelangelo, 1536–41. Public domain. https://commons.wikimedia.org/wiki/File:Last_Judgement_(Michelangelo).jpg
   - The Baptism of Christ — Pietro Perugino, 1482. Public domain. https://commons.wikimedia.org/wiki/File:Pietro_Perugino_-_Baptism_of_Christ_-_Sistine_Chapel_-_cat13a.jpg
