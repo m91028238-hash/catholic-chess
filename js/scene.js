@@ -1,10 +1,10 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=20';
-import { pieceGeometries } from './pieces.js?v=20';
-import { buildPlinth } from './basilica.js?v=20';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=20';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=21';
+import { pieceGeometries } from './pieces.js?v=21';
+import { buildPlinth } from './basilica.js?v=21';
+import { Sistine, ROOM, ceilingAt } from './sistine.js?v=21';
 const CHAIR_Z=7.0; // chair centres, each side of the table (2.6 units per metre)
 
 const TOP=0.32;

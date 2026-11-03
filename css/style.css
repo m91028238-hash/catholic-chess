@@ -92,3 +92,26 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 .seathint{position:absolute;left:22px;bottom:148px;z-index:5;display:flex;flex-direction:column;align-items:flex-start;gap:4px;font-size:.78rem;color:#f3e2bd;text-shadow:0 1px 3px #000;pointer-events:none;max-width:60vw}
 .seathint[hidden]{display:none}
 .seathint button{pointer-events:auto;background:none;border:0;padding:2px 0;color:#e6c47a;font-size:.74rem;text-decoration:underline;cursor:pointer;min-height:0}
+
+/* Full screen (native or pseudo): only the 3D view, with small translucent corner overlays */
+.fsov,#fsPanel{display:none}
+body.full #app{padding:0}
+body.full #top,body.full .clk,body.full #hist,body.full .ctrls{display:none!important}
+body.full #stage{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100dvh;z-index:0;flex:none}
+body.full #bottom{position:fixed;left:50%;right:auto;top:auto;bottom:calc(6px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(340px,92vw);z-index:8;background:none;border:0;padding:0}
+body.full #bottom .panel{background:rgba(20,12,6,.82)}
+body.full .artui{display:none}
+body.full .fsov{display:block;position:absolute;top:calc(6px + env(safe-area-inset-top));z-index:9;width:34px;height:34px;border-radius:50%;border:1px solid rgba(201,168,108,.35);background:rgba(20,12,6,.45);color:#ffe2a6;font-size:.95rem;line-height:1;padding:0;opacity:.8}
+body.full .fsov.on{opacity:1;background:rgba(42,26,16,.8)}
+body.full #fsX{right:calc(6px + env(safe-area-inset-right))}
+body.full #fsMenu{left:calc(6px + env(safe-area-inset-left))}
+body.full #fsPanel:not([hidden]){display:block;position:absolute;z-index:9;left:calc(6px + env(safe-area-inset-left));top:calc(46px + env(safe-area-inset-top));width:min(300px,calc(100vw - 12px));max-height:calc(100% - 60px);overflow-y:auto;padding:8px;border-radius:12px;border:1px solid rgba(201,168,108,.35);background:rgba(20,12,6,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:fsin .18s ease-out}
+@keyframes fsin{from{transform:translateX(-12px);opacity:0}to{transform:none;opacity:1}}
+#fsPanel .fsbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+#fsPanel .fsbtns button{border:1px solid rgba(201,168,108,.5);background:rgba(80,55,30,.6);color:#ffe2a6;border-radius:9px;padding:7px 3px;font-size:.72rem}
+#fsPanel .fsbtns button[hidden]{display:none}#fsPanel .fsbtns button:disabled{opacity:.4}
+body.full #fsPanel .artui:not([hidden]){display:flex;flex-wrap:wrap;position:static;margin-top:7px;overflow:visible}
+body.full #fsPanel .artui button.tog{display:none}
+body.full .zoomui{right:calc(8px + env(safe-area-inset-right));bottom:calc(8px + env(safe-area-inset-bottom))}
+body.full .joy{bottom:calc(22px + env(safe-area-inset-bottom))}
+body.full #toast{top:calc(10px + env(safe-area-inset-top))}
