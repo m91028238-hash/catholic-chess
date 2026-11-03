@@ -1,10 +1,10 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=21';
-import { pieceGeometries } from './pieces.js?v=21';
-import { buildPlinth } from './basilica.js?v=21';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=21';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=22';
+import { pieceGeometries } from './pieces.js?v=22';
+import { buildPlinth } from './basilica.js?v=22';
+import { Sistine, ROOM, ceilingAt } from './sistine.js?v=22';
 const CHAIR_Z=7.0; // chair centres, each side of the table (2.6 units per metre)
 
 const TOP=0.32;
@@ -80,11 +80,21 @@ export class ChessScene{
     const J=this.joy={x:0,y:0,id:null},R=44,knob=j.firstChild;
     const setK=(dx,dy)=>{const l=Math.hypot(dx,dy),s=l>R?R/l:1;dx*=s;dy*=s;knob.style.transform=`translate(${dx}px,${dy}px)`;
       let x=dx/R,y=dy/R;const m=Math.hypot(x,y);if(m<.15){x=y=0}else{const k=(m-.15)/.85/m;x*=k;y*=k}J.x=x;J.y=y};
-    j.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();J.id=e.pointerId;try{j.setPointerCapture(e.pointerId)}catch(_){}
-      const r=j.getBoundingClientRect();J.cx=r.left+r.width/2;J.cy=r.top+r.height/2;setK(e.clientX-J.cx,e.clientY-J.cy);if(this.walk)this.walk.glide=null});
-    j.addEventListener('pointermove',e=>{if(e.pointerId===J.id)setK(e.clientX-J.cx,e.clientY-J.cy)});
+    // geometry is re-read on every press (the stage resizes on fullscreen / rotation), and reset on resize so a stale press can't keep walking
+    const centre=()=>{const r=j.getBoundingClientRect();J.cx=r.left+r.width/2;J.cy=r.top+r.height/2};
+    const start=(id,x,y)=>{J.id=id;centre();setK(x-J.cx,y-J.cy);if(this.walk)this.walk.glide=null};
+    j.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(J.id!=null&&J.id!==e.pointerId)return;try{j.setPointerCapture(e.pointerId)}catch(_){}start(e.pointerId,e.clientX,e.clientY)});
+    j.addEventListener('pointermove',e=>{if(e.pointerId===J.id){e.preventDefault();setK(e.clientX-J.cx,e.clientY-J.cy)}});
     const end=e=>{if(e.pointerId!==J.id)return;J.id=null;setK(0,0)};
-    j.addEventListener('pointerup',end);j.addEventListener('pointercancel',end);
+    j.addEventListener('pointerup',end);j.addEventListener('pointercancel',end);j.addEventListener('lostpointercapture',end);
+    // touch fallback (browsers without pointer events) and to stop the page scrolling/zooming under the stick
+    if(!window.PointerEvent){const tf=e=>{const t=[...e.changedTouches].find(t=>J.id==null||J.id==='t'+t.identifier);return t};
+      j.addEventListener('touchstart',e=>{e.preventDefault();const t=tf(e);if(t)start('t'+t.identifier,t.clientX,t.clientY)},{passive:false});
+      j.addEventListener('touchmove',e=>{e.preventDefault();const t=tf(e);if(t&&J.id!=null)setK(t.clientX-J.cx,t.clientY-J.cy)},{passive:false});
+      const te=e=>{const t=tf(e);if(t&&J.id!=null){J.id=null;setK(0,0)}};j.addEventListener('touchend',te);j.addEventListener('touchcancel',te)}
+    else j.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+    this.resetJoy=()=>{J.id=null;setK(0,0)};
+    const rj=()=>{if(J.id!=null)centre()};window.addEventListener('resize',rj);document.addEventListener('fullscreenchange',rj);
   }
   zoom(f){ // Walk: optical zoom (field of view); Free cam: dolly
     if(this.free)return this._freeDolly(f);if(!this.walk)return;this.walk.fovTo=THREE.MathUtils.clamp(this.walk.fovTo*f,15,75)}

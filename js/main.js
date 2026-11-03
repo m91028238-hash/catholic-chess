@@ -1,7 +1,7 @@
 import { Chess } from '../vendor/chess.js?v=2';
-import { ChessScene } from './scene.js?v=21';
-import * as AI from './ai.js?v=21';
-import { play, setSound, unlockAudio } from './sound.js?v=21';
+import { ChessScene } from './scene.js?v=22';
+import * as AI from './ai.js?v=22';
+import { play, setSound, unlockAudio } from './sound.js?v=22';
 
 const $=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
@@ -295,8 +295,8 @@ window.CC={_scene:scene,
   [x,m,pn].forEach(e=>st.appendChild(e));
   const art=()=>scene.artUI,home=art()&&art().parentNode,slot=pn.querySelector('.fsart');
   const sync=()=>pn.querySelectorAll('[data-for]').forEach(e=>{const o=$(e.dataset.for);if(e.dataset.for!=='menuBtn')e.textContent=o.textContent;e.disabled=o.disabled;e.hidden=o.hidden});
-  const close=()=>{pn.hidden=true;m.classList.remove('on');const a=art();if(a&&home&&a.parentNode!==home){home.appendChild(a);a.classList.toggle('shut',wasShut)}};
-  let wasShut=false;const open=()=>{sync();const a=art();if(a){wasShut=a.classList.contains('shut');a.classList.remove('shut');slot.appendChild(a)}pn.hidden=false;m.classList.add('on')};
+  const close=()=>{pn.hidden=true;m.classList.remove('on');document.body.classList.remove('fsopen');const a=art();if(a&&home&&a.parentNode!==home){home.appendChild(a);a.classList.toggle('shut',wasShut)}};
+  let wasShut=false;const open=()=>{sync();const a=art();if(a){wasShut=a.classList.contains('shut');a.classList.remove('shut');slot.appendChild(a)}pn.hidden=false;m.classList.add('on');document.body.classList.add('fsopen')};
   m.onclick=e=>{e.stopPropagation();pn.hidden?open():close()};
   [pn,x,m].forEach(e=>e.addEventListener('pointerdown',ev=>ev.stopPropagation()));
   pn.addEventListener('click',e=>{e.stopPropagation();const t=e.target.closest('button');if(!t)return;
@@ -305,7 +305,7 @@ window.CC={_scene:scene,
   const isFull=()=>!!fsEl()||pseudo;
   const lock=()=>{try{if(fsEl()&&screen.orientation&&screen.orientation.lock&&innerWidth>innerHeight)screen.orientation.lock('landscape').catch(()=>{})}catch(_){}};
   const upd=()=>{const f=isFull();document.body.classList.toggle('full',f);document.body.classList.toggle('fs',!!fsEl());
-    b.textContent=f?'✕':'⛶';if(!f)close();lock();scene.resize();setTimeout(()=>scene.resize(),150)};
+    b.textContent=f?'✕':'⛶';if(!f)close();lock();scene.resetJoy&&scene.resetJoy();scene.resize();setTimeout(()=>scene.resize(),150)};
   const enterPseudo=()=>{pseudo=true;try{history.pushState({pfs:1},'')}catch(_){}upd()};
   const exitPseudo=(fromPop)=>{if(!pseudo)return;pseudo=false;if(!fromPop&&history.state&&history.state.pfs)try{history.back()}catch(_){}upd()};
   const exit=()=>{if(fsEl()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);try{screen.orientation.unlock()}catch(_){}}else exitPseudo()};

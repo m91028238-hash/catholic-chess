@@ -56,7 +56,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 .credits summary{color:#c9a86c;cursor:pointer}
 .credits ul{padding-left:18px;margin-top:6px;line-height:1.45}.credits p{margin-top:6px;line-height:1.45}
 .credits a{color:#ffd98a}
-.zoomui{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.zoomui{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px;z-index:5;pointer-events:none}
+.zoomui button{pointer-events:auto;touch-action:manipulation}
 .zoomui[hidden]{display:none}
 .zoomui button{width:38px;height:38px;border-radius:10px;border:1px solid rgba(201,168,108,.6);background:rgba(42,26,16,.78);color:#ffe2a6;font-size:1.3rem;line-height:1}
 .artui{position:absolute;left:8px;right:8px;top:8px;display:flex;gap:5px;overflow-x:auto;z-index:5;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:1px}
@@ -68,7 +69,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulatio
 .artui.shut button.tog::after{content:' ›'}
 .artui.shut button:not(.tog){display:none}
 
-.joy{position:absolute;left:22px;bottom:22px;width:118px;height:118px;border-radius:50%;border:2px solid rgba(201,168,108,.5);background:radial-gradient(circle,rgba(42,26,16,.18),rgba(42,26,16,.38));z-index:5;touch-action:none;box-shadow:inset 0 0 18px rgba(201,168,108,.12)}
+.joy{position:absolute;left:22px;bottom:22px;width:118px;height:118px;border-radius:50%;border:2px solid rgba(201,168,108,.5);background:radial-gradient(circle,rgba(42,26,16,.18),rgba(42,26,16,.38));z-index:5;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;box-shadow:inset 0 0 18px rgba(201,168,108,.12)}
 .joy[hidden]{display:none}
 .joy .knob{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(201,168,108,.42);border:1px solid rgba(255,226,166,.45);pointer-events:none}
 #fsBtn{width:40px;height:40px;border-radius:10px;border:1px solid rgba(201,168,108,.45);background:rgba(0,0,0,.2);font-size:1.15rem;color:#ffd98a;flex-shrink:0}
@@ -112,6 +113,19 @@ body.full #fsPanel:not([hidden]){display:block;position:absolute;z-index:9;left:
 #fsPanel .fsbtns button[hidden]{display:none}#fsPanel .fsbtns button:disabled{opacity:.4}
 body.full #fsPanel .artui:not([hidden]){display:flex;flex-wrap:wrap;position:static;margin-top:7px;overflow:visible}
 body.full #fsPanel .artui button.tog{display:none}
-body.full .zoomui{right:calc(8px + env(safe-area-inset-right));bottom:calc(8px + env(safe-area-inset-bottom))}
-body.full .joy{bottom:calc(22px + env(safe-area-inset-bottom))}
-body.full #toast{top:calc(10px + env(safe-area-inset-top))}
+/* full-screen layout: ☰ and ✕ top corners; hint/toast top-centre between them; joystick bottom-left and zoom bottom-right
+   above the Android gesture bar; game panels bottom-centre between them. No two touch boxes overlap (portrait or landscape). */
+body.full .fsov{top:calc(12px + env(safe-area-inset-top));width:40px;height:40px}
+body.full #fsX{right:calc(12px + env(safe-area-inset-right))}
+body.full #fsMenu{left:calc(12px + env(safe-area-inset-left))}
+body.full #fsPanel:not([hidden]){left:calc(12px + env(safe-area-inset-left));top:calc(60px + env(safe-area-inset-top));width:min(300px,calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)));max-height:calc(100dvh - 72px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+body.full .zoomui{right:calc(24px + env(safe-area-inset-right));bottom:calc(28px + env(safe-area-inset-bottom));gap:10px}
+body.full .zoomui button{width:44px;height:44px}
+body.full .joy{left:calc(24px + env(safe-area-inset-left));bottom:calc(28px + env(safe-area-inset-bottom));width:112px;height:112px}
+body.full .seathint{left:50%;right:auto;bottom:auto;top:calc(12px + env(safe-area-inset-top));transform:translateX(-50%);max-width:calc(100vw - 128px - env(safe-area-inset-left) - env(safe-area-inset-right));align-items:center;text-align:center;gap:2px;padding:3px 12px;border-radius:12px;background:rgba(20,12,6,.55)}
+body.full .seathint button{min-height:24px;padding:2px 10px}
+body.full #toast{top:calc(64px + env(safe-area-inset-top));max-width:calc(100vw - 128px)}
+body.full #bottom{bottom:calc(28px + env(safe-area-inset-bottom));width:min(340px,calc(100vw - 2*(24px + 112px + 12px) - env(safe-area-inset-left) - env(safe-area-inset-right)));pointer-events:none}
+body.full #bottom .panel{pointer-events:auto;max-height:calc(100dvh - 140px);overflow-y:auto}
+body.full.fsopen .joy,body.full.fsopen .zoomui,body.full.fsopen .seathint{visibility:hidden}
+@media (orientation:portrait){body.full #bottom{bottom:calc(28px + 112px + 16px + env(safe-area-inset-bottom));width:min(340px,calc(100vw - 24px))}body.full #bottom .panel{max-height:calc(100dvh - 240px)}}

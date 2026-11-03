@@ -1,7 +1,7 @@
 // The Sistine Chapel built as real geometry around the board (real proportions: 40.9 x 13.4 x 20.7 m),
 // textured with public-domain fresco scans from Wikimedia Commons (see ASSETS.md / Image credits).
 import * as THREE from 'three';
-import { FLOOR } from './basilica.js?v=21';
+import { FLOOR } from './basilica.js?v=22';
 
 const S=2.6;                        // scene units per metre
 export const ROOM={W:13.4*S,L:40.9*S,H:20.7*S,y0:FLOOR};
@@ -34,12 +34,12 @@ export class Sistine{
   }
   tex(c,rx=1,ry=1){const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.anisotropy=this.aniso;return t}
   photo(name,rx=1,ry=1,cb){ // real-photo wall texture (Commons crops, assets/sistine/): sRGB, mipmaps, max anisotropy, clamped to the GPU limit
-    const t=this.loader.load(`assets/sistine/${name}.jpg?v=21`,tt=>{this.fit(tt);tt.needsUpdate=true;if(cb)cb(tt)},undefined,e=>console.warn('Sistine: could not load',name,e));
+    const t=this.loader.load(`assets/sistine/${name}.jpg?v=22`,tt=>{this.fit(tt);tt.needsUpdate=true;if(cb)cb(tt)},undefined,e=>console.warn('Sistine: could not load',name,e));
     t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;return t}
   imgs(names,fn){const out={};let n=names.length;for(const k of names)this._img(k,im=>{out[k]=im;if(--n===0)fn(out)},()=>{if(--n===0)fn(out)})}
   fit(t){const im=t.image,c=this.cap;if(!im||!im.width||(im.width<=c&&im.height<=c))return t; // downscale oversized images
     const k=c/Math.max(im.width,im.height),[cc,x]=cv(Math.round(im.width*k),Math.round(im.height*k));x.drawImage(im,0,0,cc.width,cc.height);t.image=cc;t.needsUpdate=true;return t}
-  load(name,mat,retry=1){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=21`,t=>{
+  load(name,mat,retry=1){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=22`,t=>{
     this.fit(t);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
     mat.userData.base=t;(this.mats||(this.mats={}))[name]=mat;if(!(this.hdTex&&this.hdTex[name]))mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true;res(t)},undefined,e=>{console.warn('Sistine: could not load',name,e);if(retry)setTimeout(()=>this.load(name,mat,0).then(res),1500);else res(null)}))}
   // ---------- floor: the chapel's Cosmatesque pavement (one panel = the chapel's width, repeated along the nave) ----------
@@ -122,7 +122,7 @@ export class Sistine{
     if(im){const pw=bw*.7/6.8,y0=(8.9-8.05)*bw/6.8*ky,h=4.1*bw/6.8*ky;f.save();f.beginPath();f.rect(X,0,bw,fh);f.clip();this._pilaster(f,X-pw/2,y0,pw,h,im);this._pilaster(f,X+bw-pw/2,y0,pw,h,im);f.restore()}}
   _marble(N=256){const [c,x]=cv(N,N);x.fillStyle='#ece5d6';x.fillRect(0,0,N,N);seed=5;x.strokeStyle='rgba(120,110,95,.35)';
     for(let i=0;i<26;i++){x.lineWidth=.5+rnd()*1.5;x.beginPath();let a=rnd()*N,b=rnd()*N;x.moveTo(a,b);for(let k=0;k<6;k++){a+=(rnd()-.5)*N*.3;b+=(rnd()-.3)*N*.2;x.lineTo(a,b)}x.stroke()}return c}
-  _img(name,fn,err){const im=new Image();im.onload=()=>fn(im);im.onerror=()=>{console.warn('Sistine: could not load',name);if(err)err()};im.src=`assets/sistine/${name}.jpg?v=21`}
+  _img(name,fn,err){const im=new Image();im.onload=()=>fn(im);im.onerror=()=>{console.warn('Sistine: could not load',name);if(err)err()};im.src=`assets/sistine/${name}.jpg?v=22`}
   // ---------- side walls: drapery, fresco tier, popes & windows tier ----------
   _walls(){
     const px=150,bw=Math.round(6.8*px);
@@ -283,7 +283,7 @@ export class Sistine{
     const L=this.hdList||(this.hdList=[]),T=this.hdTex||(this.hdTex={}),i=L.indexOf(name);
     if(i>=0){L.splice(i,1);L.push(name);return}
     L.push(name);while(L.length>2)this._dropHD(L.shift());
-    this.loader.load(`assets/sistine/hd/${name}.jpg?v=21`,t=>{const mat=this.mats&&this.mats[name];if(!L.includes(name)||!mat){t.dispose();return}
+    this.loader.load(`assets/sistine/hd/${name}.jpg?v=22`,t=>{const mat=this.mats&&this.mats[name];if(!L.includes(name)||!mat){t.dispose();return}
       this.fit(t);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
       T[name]=t;mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true},undefined,e=>{console.warn('Sistine: hi-res failed, keeping low-res',name,e);const k=L.indexOf(name);if(k>=0)L.splice(k,1)})} // low-res stays on until hi-res succeeds
   _dropHD(name){const t=this.hdTex[name];if(!t)return;const mat=this.mats[name];if(mat&&mat.userData.base){mat.map=mat.userData.base;mat.needsUpdate=true}t.dispose();delete this.hdTex[name]}
