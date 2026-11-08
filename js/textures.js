@@ -174,6 +174,12 @@ function panelArt(c,w,h,s,kind){
     c.fillStyle='#fff';c.font=`bold ${s*.3}px Georgia,serif`;
     c.lineWidth=s*.03;for(const [ch,x,y] of [['C',-1,-1],['S',1,-1],['P',-1,1],['B',1,1]]){c.beginPath();c.arc(x*R*.42,y*R*.42,s*.24,0,7);c.stroke();c.fillText(ch,x*R*.42,y*R*.42+s*.01)}
     c.font=`bold ${s*.2}px Georgia,serif`;c.fillText('PAX',0,-R*.9);
+    // laurel sprigs either side of PAX, as on the medal
+    {const rr=R*.9;c.save();c.lineWidth=s*.022;c.lineCap='round';
+     for(const sd of [-1,1]){c.beginPath();c.arc(0,0,rr,-Math.PI/2+sd*.21,-Math.PI/2+sd*.45,sd<0);c.stroke();
+       for(let k=0;k<4;k++){const a=sd*(.24+k*.06);for(const up of [-1,1]){c.save();c.rotate(a);c.translate(0,-rr+up*s*.045);c.rotate(sd*up*-.6);
+         c.beginPath();c.ellipse(0,0,s*.028,s*.06,0,0,7);c.fill();c.restore()}}}
+     c.restore()}
     c.restore();
     // crozier (abbot's staff) and open Rule
     c.save();c.translate(0,h*.26);c.lineWidth=s*.07;c.lineCap='round';
