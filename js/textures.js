@@ -160,14 +160,19 @@ function panelArt(c,w,h,s,kind){
     // St Benedict medal reverse: cross with CSSML / NDSMD, CSPB, PAX, VRS NSMV SMQL IVB
     c.save();c.translate(0,-h*.12);const R=s*1.75;
     c.lineWidth=s*.06;c.beginPath();c.arc(0,0,R,0,7);c.stroke();c.lineWidth=s*.02;c.beginPath();c.arc(0,0,R*.8,0,7);c.stroke();
-    arcText(c,'✠ V R S N S M V S M Q L I V B',R*.9,-Math.PI*.92,Math.PI*.92,s*.17);
+    // outer ring: PAX at the top, then V R S N S M V S M Q L I V B clockwise; every letter kept upright
+    {const ring='VRSNSMVSMQLIVB';c.save();c.font=`bold ${s*.17}px Georgia,serif`;c.textAlign='center';c.textBaseline='middle';
+     const a0=Math.PI*.2,a1=Math.PI*1.8;
+     for(let i=0;i<ring.length;i++){const a=a0+(a1-a0)*i/(ring.length-1);c.save();c.rotate(a);c.translate(0,-R*.9);
+       if(a>Math.PI*.5&&a<Math.PI*1.5)c.rotate(Math.PI);c.fillText(ring[i],0,0);c.restore()}
+     c.restore()}
     c.fillRect(-s*.13,-R*.72,s*.26,R*1.44);c.fillRect(-R*.72,-s*.13,R*1.44,s*.26);
     c.fillStyle='#000';c.font=`bold ${s*.15}px Georgia,serif`;
     'CSSML'.split('').forEach((ch,i)=>c.fillText(ch,0,-R*.6+i*R*.3));
     'NDSMD'.split('').forEach((ch,i)=>{if(i!==2)c.fillText(ch,-R*.6+i*R*.3,0)});
     c.fillStyle='#fff';c.font=`bold ${s*.3}px Georgia,serif`;
     c.fillText('C',-R*.42,-R*.42);c.fillText('S',R*.42,-R*.42);c.fillText('P',-R*.42,R*.42);c.fillText('B',R*.42,R*.42);
-    c.font=`bold ${s*.24}px Georgia,serif`;c.fillText('PAX',0,-R-s*.25);
+    c.font=`bold ${s*.2}px Georgia,serif`;c.fillText('PAX',0,-R*.9);
     c.restore();
     // crozier (abbot's staff) and open Rule
     c.save();c.translate(0,h*.2);c.lineWidth=s*.07;c.lineCap='round';
