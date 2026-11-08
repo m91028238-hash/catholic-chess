@@ -160,22 +160,23 @@ function panelArt(c,w,h,s,kind){
     // St Benedict medal reverse: cross with CSSML / NDSMD, CSPB, PAX, VRS NSMV SMQL IVB
     c.save();c.translate(0,-h*.12);const R=s*1.75;
     c.lineWidth=s*.06;c.beginPath();c.arc(0,0,R,0,7);c.stroke();c.lineWidth=s*.02;c.beginPath();c.arc(0,0,R*.8,0,7);c.stroke();
-    // outer ring: PAX at the top, then V R S N S M V S M Q L I V B clockwise; every letter kept upright
-    {const ring='VRSNSMVSMQLIVB';c.save();c.font=`bold ${s*.17}px Georgia,serif`;c.textAlign='center';c.textBaseline='middle';
-     const a0=Math.PI*.2,a1=Math.PI*1.8;
-     for(let i=0;i<ring.length;i++){const a=a0+(a1-a0)*i/(ring.length-1);c.save();c.rotate(a);c.translate(0,-R*.9);
-       if(a>Math.PI*.5&&a<Math.PI*1.5)c.rotate(Math.PI);c.fillText(ring[i],0,0);c.restore()}
+    // outer ring as on the real medal: PAX at the top, then V R S N S M V S M Q L I V B clockwise,
+    // letters facing outward (tops toward the rim) with small dots between them
+    {const ring='VRSNSMVSMQLIVB';c.save();c.font=`bold ${s*.19}px Georgia,serif`;c.textAlign='center';c.textBaseline='middle';
+     const a0=Math.PI*.17,a1=Math.PI*1.83,n=ring.length,st=(a1-a0)/(n-1);
+     for(let i=0;i<n;i++){const a=a0+st*i;c.save();c.rotate(a);c.translate(0,-R*.9);c.fillText(ring[i],0,0);c.restore();
+       if(i<n-1){for(const f of [.38,.62]){c.save();c.rotate(a+st*f);c.beginPath();c.arc(0,-R*.9,s*.025,0,7);c.fill();c.restore()}}}
      c.restore()}
     c.fillRect(-s*.13,-R*.72,s*.26,R*1.44);c.fillRect(-R*.72,-s*.13,R*1.44,s*.26);
     c.fillStyle='#000';c.font=`bold ${s*.15}px Georgia,serif`;
     'CSSML'.split('').forEach((ch,i)=>c.fillText(ch,0,-R*.6+i*R*.3));
     'NDSMD'.split('').forEach((ch,i)=>{if(i!==2)c.fillText(ch,-R*.6+i*R*.3,0)});
     c.fillStyle='#fff';c.font=`bold ${s*.3}px Georgia,serif`;
-    c.fillText('C',-R*.42,-R*.42);c.fillText('S',R*.42,-R*.42);c.fillText('P',-R*.42,R*.42);c.fillText('B',R*.42,R*.42);
+    c.lineWidth=s*.03;for(const [ch,x,y] of [['C',-1,-1],['S',1,-1],['P',-1,1],['B',1,1]]){c.beginPath();c.arc(x*R*.42,y*R*.42,s*.24,0,7);c.stroke();c.fillText(ch,x*R*.42,y*R*.42+s*.01)}
     c.font=`bold ${s*.2}px Georgia,serif`;c.fillText('PAX',0,-R*.9);
     c.restore();
     // crozier (abbot's staff) and open Rule
-    c.save();c.translate(0,h*.2);c.lineWidth=s*.07;c.lineCap='round';
+    c.save();c.translate(0,h*.26);c.lineWidth=s*.07;c.lineCap='round';
     c.beginPath();c.moveTo(-s*.9,s*.9);c.lineTo(s*.6,-s*.6);c.stroke();
     c.beginPath();c.arc(s*.78,-s*.86,s*.26,Math.PI*.8,Math.PI*2.4);c.stroke();
     c.lineWidth=s*.03;c.beginPath();c.moveTo(-s*.95,-s*.45);c.quadraticCurveTo(-s*.5,-s*.62,0,-s*.45);c.quadraticCurveTo(s*.5,-s*.62,s*.95,-s*.45);
