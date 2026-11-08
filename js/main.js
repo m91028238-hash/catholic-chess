@@ -1,5 +1,5 @@
 import { Chess } from '../vendor/chess.js?v=2';
-import { ChessScene } from './scene.js?v=23';
+import { ChessScene } from './scene.js?v=24';
 import * as AI from './ai.js?v=22';
 import { play, setSound, unlockAudio } from './sound.js?v=22';
 

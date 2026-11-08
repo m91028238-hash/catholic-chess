@@ -8,7 +8,10 @@ export const ROOM={W:13.4*S,L:40.9*S,H:20.7*S,y0:FLOOR};
 const HW=ROOM.W/2,HL=ROOM.L/2,y0=FLOOR,m=h=>y0+h*S;
 // shallow barrel vault: chord 13.4 m, rise 5.19 m -> radius 6.92 m
 const VR=6.92*S,VYC=m(13.78),VA=Math.asin(HW/VR),SPRING=VYC+Math.sqrt(VR*VR-HW*HW);
-export const ceilingAt=x=>VYC+Math.sqrt(Math.max(0,VR*VR-x*x));
+// the vault curves down into both end walls (as in the chapel, where Jonah and Zechariah sit on those curves): cove lengths in plan
+const COVE_A=5*S,COVE_E=6*S;
+const coveT=z=>z<-HL+COVE_A?(z+HL)/COVE_A:z>HL-COVE_E?(HL-z)/COVE_E:1;
+export const ceilingAt=(x,z=0)=>{const y=VYC+Math.sqrt(Math.max(0,VR*VR-x*x)),t=Math.max(0,Math.min(1,coveT(z)));return SPRING+(y-SPRING)*Math.sin(t*Math.PI/2)};
 export const VAULT={R:VR,YC:VYC};
 const BAY=ROOM.L/6;
 // The 15th-century cycles, bay 1 = next to the altar (north wall = right when facing the altar)
@@ -217,30 +220,55 @@ export class Sistine{
     const Yv=new THREE.Vector3(0,1,0);
     for(let i=0;i<6;i++){const z=-HL+(i+.5)*BAY,a=new THREE.Vector3(-HW+.3,m(12.3),z),b=new THREE.Vector3(HW*.25,y0,z+2.5*S),d=b.clone().sub(a),L=d.length();d.normalize();
       for(const r of [0,Math.PI/2]){const geo=new THREE.PlaneGeometry(2.2*S,L).rotateY(r);const ms=new THREE.Mesh(geo,mat);ms.quaternion.setFromUnitVectors(Yv,d.clone().negate());ms.position.copy(a).addScaledVector(d,L/2);ms.renderOrder=5;this.g.add(ms)}}}
-  _vault(){
-    const n=64,pos=[],uv=[],idx=[];
-    for(let i=0;i<=n;i++){const a=-VA+2*VA*i/n,x=VR*Math.sin(a),y=VYC+VR*Math.cos(a);
-      for(const z of [-HL,HL]){pos.push(x,y,z);uv.push(.5-z/ROOM.L,.5+x/ROOM.W)}} // orthographic (as photographed from below)
-    for(let i=0;i<n;i++){const a=i*2;idx.push(a,a+2,a+1,a+1,a+2,a+3)}
+  _vault(){ // barrel vault with curved ends; the whole ceiling composite maps once in plan, and inside each cove u follows the curve's length so the end figures are not stretched
+    const n=64,k=24,pos=[],uv=[],idx=[],zs=[];
+    for(let j=0;j<=k;j++)zs.push(-HL+COVE_A*j/k);for(let j=0;j<=k;j++)zs.push(HL-COVE_E+COVE_E*j/k);
+    const cols=zs.length,uz=z=>.5-z/ROOM.L;
+    for(let i=0;i<=n;i++){const a=-VA+2*VA*i/n,x=VR*Math.sin(a),ys=zs.map(z=>ceilingAt(x,z));
+      const arc=(j0,j1)=>{const d=[0];for(let j=j0+1;j<=j1;j++)d.push(d[d.length-1]+Math.hypot(zs[j]-zs[j-1],ys[j]-ys[j-1]));return d};
+      const dA=arc(0,k),dE=arc(k+1,2*k+1);
+      for(let j=0;j<cols;j++){let u;
+        if(j<=k){const f=dA[j]/dA[k];u=uz(-HL)+(uz(-HL+COVE_A)-uz(-HL))*f}
+        else{const f=dE[j-k-1]/dE[k];u=uz(HL-COVE_E)+(uz(HL)-uz(HL-COVE_E))*f}
+        pos.push(x,ys[j],zs[j]);uv.push(u,.5+x/ROOM.W)}}
+    for(let i=0;i<n;i++)for(let j=0;j<cols-1;j++){const a=i*cols+j,b=a+cols;idx.push(a,b,a+1,a+1,b,b+1)}
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);
     this.ceilMat=basic({color:0xb8ab92,side:THREE.DoubleSide});
     this.g.add(new THREE.Mesh(g,this.ceilMat));
   }
-  _altar(){
-    const z=-HL+3.2*S,marble=new THREE.MeshStandardMaterial({color:0xe6dccb,roughness:.5});
+  _altar(){ // the altar against the Last Judgement wall with its bronze crucifix and six candlesticks (as photographed in the chapel)
+    const z=-HL,marble=new THREE.MeshStandardMaterial({color:0xe6dccb,roughness:.5});
     const gold=new THREE.MeshStandardMaterial({color:0xd4a64a,metalness:1,roughness:.3,envMap:this.scene.environment});
-    const step=new THREE.Mesh(new THREE.BoxGeometry(8*S,.5*S,3.4*S),new THREE.MeshStandardMaterial({color:0xb7ab98,roughness:.6}));step.position.set(0,m(.25),z-.4);this.g.add(step);
-    const alt=new THREE.Mesh(new THREE.BoxGeometry(3.6*S,1*S,1.2*S),marble);alt.position.set(0,m(1),z-1.2);this.g.add(alt);
-    const front=new THREE.Mesh(new THREE.PlaneGeometry(3.2*S,.7*S),basic({color:0x7a2b24}));front.position.set(0,m(1),z-1.2+.6*S+.02);this.g.add(front);
-    const top=m(1.5);
-    const v=new THREE.Mesh(new THREE.BoxGeometry(.12*S,1.6*S,.12*S),gold);v.position.set(0,top+.8*S,z-1.6);this.g.add(v);
-    const h=new THREE.Mesh(new THREE.BoxGeometry(.8*S,.1*S,.1*S),gold);h.position.set(0,top+1.15*S,z-1.6);this.g.add(h);
-    const flame=basic({color:0xffd9a0});
-    const sg=new THREE.CylinderGeometry(.05*S,.14*S,.9*S,10),cg=new THREE.CylinderGeometry(.035*S,.035*S,.3*S,8),fg=new THREE.SphereGeometry(.04*S,8,6);
-    for(let i=0;i<6;i++){const xx=(i<3?-1:1)*(.45+((i%3))*.45)*S;
-      const s=new THREE.Mesh(sg,gold);s.position.set(xx,top+.45*S,z-1.6);this.g.add(s);
-      const c=new THREE.Mesh(cg,basic({color:0xf3eadb}));c.position.set(xx,top+1.05*S,z-1.6);this.g.add(c);
-      const f=new THREE.Mesh(fg,flame);f.scale.y=1.8;f.position.set(xx,top+1.26*S,z-1.6);this.g.add(f)}
+    const ebony=new THREE.MeshStandardMaterial({color:0x14110f,roughness:.35,metalness:.2,envMap:this.scene.environment});
+    const bronze=new THREE.MeshStandardMaterial({color:0x5a4228,metalness:.85,roughness:.38,envMap:this.scene.environment});
+    const add=(geo,mat,x,y,zz)=>{const o=new THREE.Mesh(geo,mat);o.position.set(x,y,zz);this.g.add(o);return o};
+    add(new THREE.BoxGeometry(8*S,.5*S,4.9*S-.4),new THREE.MeshStandardMaterial({color:0xb7ab98,roughness:.6}),0,m(.25),z+(4.9*S-.4)/2); // predella, back to the wall
+    const az=z+.75*S;add(new THREE.BoxGeometry(4.6*S,1*S,1.2*S),marble,0,m(1),az);
+    add(new THREE.PlaneGeometry(4.2*S,.7*S),basic({color:0x7a2b24}),0,m(1),az+.6*S+.02);
+    add(new THREE.BoxGeometry(4.7*S,.06*S,1.28*S),marble,0,m(1.53),az);
+    const top=m(1.56),cz=z+.32*S;
+    // the cross: ebony with gilded edging, crossbar centre 3.61 m above the floor
+    add(new THREE.BoxGeometry(.7*S,.16*S,.5*S),ebony,0,top+.08*S,cz);add(new THREE.BoxGeometry(.5*S,.14*S,.36*S),ebony,0,top+.23*S,cz);
+    add(new THREE.BoxGeometry(.72*S,.02*S,.52*S),gold,0,top+.165*S,cz);
+    const post=4.05-1.56,bar=1.59,ty=m(3.61),T=.2*S,D=.12*S;
+    add(new THREE.BoxGeometry(T,post*S,D),ebony,0,top+post*S/2,cz);add(new THREE.BoxGeometry(bar*S,T,D),ebony,0,ty,cz);
+    const fz=cz+D/2+.004,e=.022*S;
+    for(const sx of [-1,1]){add(new THREE.BoxGeometry(e,post*S,.01),gold,sx*(T/2-e/2),top+post*S/2,fz);add(new THREE.BoxGeometry(bar*S,e,.01),gold,0,ty+sx*(T/2-e/2),fz+.002)}
+    add(new THREE.BoxGeometry(T*1.1,.05*S,D*1.1),gold,0,top+post*S,cz);for(const sx of [-1,1])add(new THREE.BoxGeometry(.05*S,T*1.1,D*1.1),gold,sx*bar*S/2,ty,cz);
+    add(new THREE.BoxGeometry(.3*S,.04*S,.16*S),gold,0,m(1.93),cz+D/2+.04*S); // suppedaneum under the feet
+    add(new THREE.BoxGeometry(.32*S,.12*S,.02*S),gold,0,ty+.42*S,fz+.01); // titulus INRI
+    // the corpus (bronze, full length, cut out on transparent background)
+    const ct=this.loader.load('assets/sistine/corpus.png?v=23');ct.colorSpace=THREE.SRGBColorSpace;ct.anisotropy=this.aniso;
+    const cw=1.5*S,ch=cw*984/819;
+    const corpus=add(new THREE.PlaneGeometry(cw,ch),new THREE.MeshBasicMaterial({map:ct,transparent:true,alphaTest:.4,toneMapped:false,color:0xd8d0c4,side:THREE.DoubleSide}),0,m(3.72)-ch/2,fz+.05*S);
+    corpus.renderOrder=2;
+    // six tall bronze candlesticks with white candles (tops ~3.1 m)
+    const flame=basic({color:0xffd9a0}),wax=basic({color:0xf3eadb});
+    const base=new THREE.CylinderGeometry(.06*S,.17*S,.14*S,16),shaft=new THREE.CylinderGeometry(.035*S,.05*S,.8*S,12),knop=new THREE.SphereGeometry(.075*S,14,10),pan=new THREE.CylinderGeometry(.1*S,.05*S,.06*S,16);
+    const cg=new THREE.CylinderGeometry(.04*S,.04*S,.42*S,10),fg=new THREE.SphereGeometry(.032*S,8,6);
+    for(const xm of [-2.0,-1.45,-.9,.9,1.45,2.0]){const x=xm*S,zz=az+.1*S;
+      add(base,bronze,x,top+.07*S,zz);add(shaft,bronze,x,top+.54*S,zz);const k=add(knop,bronze,x,top+.5*S,zz);k.scale.y=.8;
+      add(pan,bronze,x,top+.97*S,zz);add(cg,wax,x,top+1.21*S,zz);const f=add(fg,flame,x,top+1.47*S,zz);f.scale.y=1.8}
   }
   _transenna(){ // veined marble screen with a gilded wrought-iron grille, the cantoria (choir loft) and the organ cabinet
     const z=HL-14.5*S,mt=this.tex(this._marble(),2,1),marble=new THREE.MeshStandardMaterial({map:mt,color:0xffffff,roughness:.35});

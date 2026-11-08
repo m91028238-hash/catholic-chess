@@ -4,7 +4,7 @@ import { OrbitControls, RoomEnvironment } from 'three';
 import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=22';
 import { pieceGeometries } from './pieces.js?v=22';
 import { buildPlinth } from './basilica.js?v=22';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=22';
+import { Sistine, ROOM, ceilingAt } from './sistine.js?v=23';
 const CHAIR_Z=7.0; // chair centres, each side of the table (2.6 units per metre)
 
 const TOP=0.32;
@@ -171,7 +171,7 @@ export class ChessScene{
   backToBoard(){this.setCamMode('Player');this.onCamChange&&this.onCamChange('Player')}
   // obstacles (x0,x1,z0,z1): the chess table, the altar steps, the two halves of the marble screen
   get _boxes(){if(!this._bx){const S=2.6,HW=ROOM.W/2,HL=ROOM.L/2,az=-HL+3.2*S-.4,tz=HL-14.5*S;
-    this._bx=[[-6.9,6.9,-4.9,4.9],[-4*S,4*S,az-1.7*S,az+1.7*S],[1.6*S,HW,tz-.25*S,tz+.25*S],[-HW,-1.6*S,tz-.25*S,tz+.25*S],[-.7,.7,CHAIR_Z-.4,CHAIR_Z+.6],[-.7,.7,-CHAIR_Z-.6,-CHAIR_Z+.4]];if(this.room&&this.room.organ)this._bx.push(this.room.organ)}return this._bx}
+    this._bx=[[-6.9,6.9,-4.9,4.9],[-4*S,4*S,-HL,az+1.7*S],[1.6*S,HW,tz-.25*S,tz+.25*S],[-HW,-1.6*S,tz-.25*S,tz+.25*S],[-.7,.7,CHAIR_Z-.4,CHAIR_Z+.6],[-.7,.7,-CHAIR_Z-.6,-CHAIR_Z+.4]];if(this.room&&this.room.organ)this._bx.push(this.room.organ)}return this._bx}
   _collide(p){const S=2.6,r=.3*S,M=.35*S,X=ROOM.W/2-M,Z=ROOM.L/2-M,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
     for(const [x0,x1,z0,z1] of this._boxes){const cx=cl(p.x,x0,x1),cz=cl(p.z,z0,z1),dx=p.x-cx,dz=p.z-cz,d=Math.hypot(dx,dz);if(d>=r)continue;
       if(d>1e-6){p.x=cx+dx/d*r;p.z=cz+dz/d*r}
@@ -260,7 +260,7 @@ export class ChessScene{
     if(d.z>1e-6)m=Math.min(m,(HL-t.z)/d.z);else if(d.z<-1e-6)m=Math.min(m,(-HL-t.z)/d.z);
     if(d.y<-1e-6)m=Math.min(m,(y0-t.y)/d.y);else if(d.y>1e-6&&t.y<yc)m=Math.min(m,(yc-t.y)/d.y);
     return Math.max(.5,m)}
-  _clampT(t){const M=2,cl=THREE.MathUtils.clamp;t.x=cl(t.x,-ROOM.W/2+M,ROOM.W/2-M);t.z=cl(t.z,-ROOM.L/2+M,ROOM.L/2-M);t.y=cl(t.y,ROOM.y0+.3,ceilingAt(t.x));return t}
+  _clampT(t){const M=2,cl=THREE.MathUtils.clamp;t.x=cl(t.x,-ROOM.W/2+M,ROOM.W/2-M);t.z=cl(t.z,-ROOM.L/2+M,ROOM.L/2-M);t.y=cl(t.y,ROOM.y0+.3,ceilingAt(t.x,t.z)-.3);return t}
   _freePan(dx,dy){const F=this.free;if(!F)return;F.glide=null;const h=this.renderer.domElement.clientHeight||600;
     const s=2*F.dist*Math.tan(THREE.MathUtils.degToRad(this.camera.fov)/2)/h;
     const right=new THREE.Vector3(Math.cos(F.yaw),0,-Math.sin(F.yaw));

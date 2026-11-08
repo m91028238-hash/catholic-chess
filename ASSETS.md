@@ -32,3 +32,5 @@
   - Hi-res Calling of the Apostles (hd/calling.jpg): "Calling of the apostles by Domenico Ghirlandaio Roma.jpg" — CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Calling_of_the_apostles_by_Domenico_Ghirlandaio_Roma.jpg
   - Hi-res Last Judgement, Resurrection, Keys, Trials, Testament (hd/) — the Commons originals listed above, downsized to max 4096 px.
 - Entrance door, railing, screen grille, organ, frames and window reveals — procedural canvases made for this game.
+
+  - Altar crucifix corpus (corpus.png): bronze crucifix corpus for the altar cross. An original image generated for this project (no third-party photo used as a texture), cut out to a transparent background. Free to use with this project.
