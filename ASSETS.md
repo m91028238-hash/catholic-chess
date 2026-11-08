@@ -33,4 +33,4 @@
   - Hi-res Last Judgement, Resurrection, Keys, Trials, Testament (hd/) — the Commons originals listed above, downsized to max 4096 px.
 - Entrance door, railing, screen grille, organ, frames and window reveals — procedural canvases made for this game.
 
-  - Altar crucifix corpus (corpus.png): bronze crucifix corpus for the altar cross. An original image generated for this project (no third-party photo used as a texture), cut out to a transparent background. Free to use with this project.
+  - Altar crucifix corpus (corpus.png): bronze crucifix corpus for the altar cross. An AI-generated image made for this project (no third-party photo used as a texture), cut out to a transparent background and shown as a flat alpha-cut plane. It is an interpretation of the bronze altar crucifix seen in the chapel, not a scan of the historical object or a 3D sculpture. Licence: project-generated; no third-party rights claimed.

@@ -4,7 +4,7 @@ import { OrbitControls, RoomEnvironment } from 'three';
 import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=22';
 import { pieceGeometries } from './pieces.js?v=22';
 import { buildPlinth } from './basilica.js?v=22';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=23';
+import { Sistine, ROOM, ceilingAt } from './sistine.js?v=25';
 const CHAIR_Z=7.0; // chair centres, each side of the table (2.6 units per metre)
 
 const TOP=0.32;

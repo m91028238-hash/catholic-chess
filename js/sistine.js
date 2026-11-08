@@ -250,13 +250,15 @@ export class Sistine{
     // the cross: ebony with gilded edging, crossbar centre 3.61 m above the floor
     add(new THREE.BoxGeometry(.7*S,.16*S,.5*S),ebony,0,top+.08*S,cz);add(new THREE.BoxGeometry(.5*S,.14*S,.36*S),ebony,0,top+.23*S,cz);
     add(new THREE.BoxGeometry(.72*S,.02*S,.52*S),gold,0,top+.165*S,cz);
-    const post=4.05-1.56,bar=1.59,ty=m(3.61),T=.2*S,D=.12*S;
-    add(new THREE.BoxGeometry(T,post*S,D),ebony,0,top+post*S/2,cz);add(new THREE.BoxGeometry(bar*S,T,D),ebony,0,ty,cz);
+    // sized/placed over the crucifix photographed in judgement.jpg (bar ~3.46-3.73 m, arms -0.80..+0.78 m, upright top ~4.0 m) so the 3D cross
+    // hides it; the bar is a little deeper and set slightly low because, seen from the floor, the 3D cross (in front of the wall) covers wall points above itself
+    const post=4.08-1.56,bar=1.68,ty=m(3.57),T=.2*S,TB=.34*S,D=.12*S;
+    add(new THREE.BoxGeometry(T,post*S,D),ebony,0,top+post*S/2,cz);add(new THREE.BoxGeometry(bar*S,TB,D),ebony,0,ty,cz);
     const fz=cz+D/2+.004,e=.022*S;
-    for(const sx of [-1,1]){add(new THREE.BoxGeometry(e,post*S,.01),gold,sx*(T/2-e/2),top+post*S/2,fz);add(new THREE.BoxGeometry(bar*S,e,.01),gold,0,ty+sx*(T/2-e/2),fz+.002)}
-    add(new THREE.BoxGeometry(T*1.1,.05*S,D*1.1),gold,0,top+post*S,cz);for(const sx of [-1,1])add(new THREE.BoxGeometry(.05*S,T*1.1,D*1.1),gold,sx*bar*S/2,ty,cz);
+    for(const sx of [-1,1]){add(new THREE.BoxGeometry(e,post*S,.01),gold,sx*(T/2-e/2),top+post*S/2,fz);add(new THREE.BoxGeometry(bar*S,e,.01),gold,0,ty+sx*(TB/2-e/2),fz+.002)}
+    add(new THREE.BoxGeometry(T*1.1,.05*S,D*1.1),gold,0,top+post*S,cz);for(const sx of [-1,1])add(new THREE.BoxGeometry(.05*S,TB*1.1,D*1.1),gold,sx*bar*S/2,ty,cz);
     add(new THREE.BoxGeometry(.3*S,.04*S,.16*S),gold,0,m(1.93),cz+D/2+.04*S); // suppedaneum under the feet
-    add(new THREE.BoxGeometry(.32*S,.12*S,.02*S),gold,0,ty+.42*S,fz+.01); // titulus INRI
+    add(new THREE.BoxGeometry(.32*S,.12*S,.02*S),gold,0,ty+.36*S,fz+.01); // titulus INRI
     // the corpus (bronze, full length, cut out on transparent background)
     const ct=this.loader.load('assets/sistine/corpus.png?v=23');ct.colorSpace=THREE.SRGBColorSpace;ct.anisotropy=this.aniso;
     const cw=1.5*S,ch=cw*984/819;
