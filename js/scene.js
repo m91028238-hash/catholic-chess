@@ -187,7 +187,7 @@ export class ChessScene{
   walkToArt(id){const w=this.walk;if(!w)return;const o=this.room.artworks().find(a=>a.id===id);if(!o)return;
     const S=2.6,EYE=ROOM.y0+1.68*S,up=o.pitch>1;let p;
     if(up)p=new THREE.Vector3(o.c.x,0,o.id==='ceiling'?-20:o.c.z);
-    else if(o.n.z)p=new THREE.Vector3(o.c.x,0,o.c.z+(o.id==='christ'?5.6:13.5)*S);
+    else if(o.n.z)p=new THREE.Vector3(o.c.x,0,o.c.z+o.n.z*(o.id==='christ'?5.6:13.5)*S);
     else p=new THREE.Vector3(o.c.x+o.n.x*11*S,0,o.c.z); // across the nave: the high panels are seen almost straight on
     this._collide(p);
     const dx=o.c.x-p.x,dz=o.c.z-p.z,hd=Math.hypot(dx,dz),dist=Math.hypot(hd,o.c.y-EYE);
