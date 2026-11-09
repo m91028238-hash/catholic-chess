@@ -1,7 +1,7 @@
 // The Sistine Chapel built as real geometry around the board (real proportions: 40.9 x 13.4 x 20.7 m),
 // textured with public-domain fresco scans from Wikimedia Commons (see ASSETS.md / Image credits).
 import * as THREE from 'three';
-import { FLOOR } from './basilica.js?v=28';
+import { FLOOR } from './basilica.js?v=29';
 
 const S=2.6;                        // scene units per metre
 export const ROOM={W:13.4*S,L:40.9*S,H:20.7*S,y0:FLOOR};
@@ -39,12 +39,12 @@ export class Sistine{
   }
   tex(c,rx=1,ry=1){const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.anisotropy=this.aniso;return t}
   photo(name,rx=1,ry=1,cb){ // real-photo wall texture (Commons crops, assets/sistine/): sRGB, mipmaps, max anisotropy, clamped to the GPU limit
-    const t=this.loader.load(`assets/sistine/${name}.jpg?v=28`,tt=>{this.fit(tt);tt.needsUpdate=true;if(cb)cb(tt)},undefined,e=>console.warn('Sistine: could not load',name,e));
+    const t=this.loader.load(`assets/sistine/${name}.jpg?v=29`,tt=>{this.fit(tt);tt.needsUpdate=true;if(cb)cb(tt)},undefined,e=>console.warn('Sistine: could not load',name,e));
     t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;return t}
   imgs(names,fn){const out={};let n=names.length;for(const k of names)this._img(k,im=>{out[k]=im;if(--n===0)fn(out)},()=>{if(--n===0)fn(out)})}
   fit(t){const im=t.image,c=this.cap;if(!im||!im.width||(im.width<=c&&im.height<=c))return t; // downscale oversized images
     const k=c/Math.max(im.width,im.height),[cc,x]=cv(Math.round(im.width*k),Math.round(im.height*k));x.drawImage(im,0,0,cc.width,cc.height);t.image=cc;t.needsUpdate=true;return t}
-  load(name,mat,retry=1){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=${name==='judgement'||name.startsWith('ceiling')?28:28}`,t=>{
+  load(name,mat,retry=1){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=${name==='judgement'||name.startsWith('ceiling')?29:29}`,t=>{
     this.fit(t);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
     mat.userData.base=t;(this.mats||(this.mats={}))[name]=mat;if(!(this.hdTex&&this.hdTex[name]))mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true;res(t)},undefined,e=>{console.warn('Sistine: could not load',name,e);if(retry)setTimeout(()=>this.load(name,mat,0).then(res),1500);else res(null)}))}
   // ---------- floor: the chapel's Cosmatesque pavement (one panel = the chapel's width, repeated along the nave) ----------
@@ -105,42 +105,42 @@ export class Sistine{
   _niche(u,cx,top,w,h,im){if(im)u.drawImage(im,cx-w/2,top,w,h)} // a pope in his shell niche (photo of the entrance wall, SZ Romtour 25)
   _window(u,cx,top,w,h,im){ // leaded bullseye glass (photo crop) in a stone reveal
     const arch=(cx,t,w,h)=>{u.beginPath();u.moveTo(cx-w/2,t+h);u.lineTo(cx-w/2,t+w/2);u.arc(cx,t+w/2,w/2,Math.PI,0);u.lineTo(cx+w/2,t+h);u.closePath()};
-    arch(cx,top-w*.07,w*1.14,h+w*.07);u.fillStyle='#8e7e66';u.fill();
-    arch(cx,top,w,h);u.fillStyle='#d8d0bc';u.fill();
+    arch(cx,top-w*.07,w*1.14,h+w*.07);u.fillStyle='#9c8664';u.fill();
+    arch(cx,top,w,h);u.fillStyle='#e9dfc6';u.fill();
     if(im){u.save();arch(cx,top,w,h);u.clip();const tw=w/3,th=tw*im.height/im.width;for(let y=top;y<top+h;y+=th)for(let k=0;k<3;k++)u.drawImage(im,cx-w/2+k*tw,y,tw,th);u.restore()}}
   _lunette(u,cx,base,w,h,img){ // lunette (half-ellipse) with Michelangelo's Ancestors of Christ
     const path=()=>{u.beginPath();u.ellipse(cx,base,w/2,h,0,Math.PI,0);u.closePath()};
-    path();u.fillStyle='#b0a288';u.fill();
+    path();u.fillStyle='#bfa77c';u.fill();
     if(img){u.save();path();u.clip();u.drawImage(img,cx-w/2,base-h,w,h*1.02);u.restore()}
     u.lineWidth=w*.025;u.strokeStyle='#e0c886';path();u.stroke();u.lineWidth=w*.01;u.strokeStyle='#6a5030';u.beginPath();u.ellipse(cx,base,w/2+w*.02,h+w*.02,0,Math.PI,0);u.stroke()}
   _upper(u,X,bw,uh,img,k,P={}){ // one side-wall bay of the window tier: spandrel painting, lunette over a leaded window, popes in niches
-    const g=u.createLinearGradient(0,0,0,uh);g.addColorStop(0,'#a89a82');g.addColorStop(1,'#c4b8a0');u.fillStyle=g;u.fillRect(X,0,bw,uh);
-    for(const s of [0,1]){u.fillStyle='#968a74';u.beginPath();u.moveTo(X+s*bw,0);u.lineTo(X+(s?bw*.82:bw*.18),0);u.lineTo(X+s*bw,uh*.36);u.fill()} // spandrel shadows into the corners of the vault
-    u.strokeStyle='#c9b88a';u.lineWidth=4;u.strokeRect(X+8,uh*.47,bw-16,uh*.5); // painted marble panel frame
-    for(let i=0;i<6;i++){u.fillStyle=`rgba(${i%2?'150,140,120':'180,172,155'},.22)`;u.fillRect(X+14+i*(bw-28)/6,uh*.9,(bw-28)/6,uh*.06)}
+    const g=u.createLinearGradient(0,0,0,uh);g.addColorStop(0,'#b79f74');g.addColorStop(1,'#d6c5a0');u.fillStyle=g;u.fillRect(X,0,bw,uh);
+    for(const s of [0,1]){u.fillStyle='#a88d5f';u.beginPath();u.moveTo(X+s*bw,0);u.lineTo(X+(s?bw*.82:bw*.18),0);u.lineTo(X+s*bw,uh*.36);u.fill()} // spandrel shadows into the corners of the vault
+    u.strokeStyle='#e2c77e';u.lineWidth=4;u.strokeRect(X+8,uh*.47,bw-16,uh*.5); // painted marble panel frame
+    for(let i=0;i<6;i++){u.fillStyle=`rgba(${i%2?'170,150,120':'200,185,150'},.25)`;u.fillRect(X+14+i*(bw-28)/6,uh*.9,(bw-28)/6,uh*.06)}
     const lw=bw*.86,lh=uh*.4;this._lunette(u,X+bw/2,lh+uh*.02,lw,lh,img);
     this._window(u,X+bw/2,uh*.3,bw*.3,uh*.62,P.window);
     const pw=bw*.15,ph=pw*740/430,pp=[P.pope1,P.pope2,P.pope3];this._niche(u,X+bw*.165,uh*.45,pw,ph,pp[(2*k)%3]);this._niche(u,X+bw*.835,uh*.45,pw,ph,pp[(2*k+1)%3]);
-    u.fillStyle='#7a6e58';u.fillRect(X,uh-8,bw,8)}
-  _middle(f,X,bw,fh,im,ky=1,col='#bba888'){ // fresco tier ground: warm plaster matched to photo surrounds; gilded pilasters between the frescoes
+    u.fillStyle='#8c7550';u.fillRect(X,uh-8,bw,8)}
+  _middle(f,X,bw,fh,im,ky=1,col='#9a7d55'){ // fresco tier ground: warm plaster matched to photo surrounds; gilded pilasters between the frescoes
     f.fillStyle=col;f.fillRect(X,0,bw,fh);
     // subtle plaster variation so the band does not read as a flat untextured slab against photo tiers
     f.save();f.globalAlpha=.14;for(let i=0;i<90;i++){const px=X+((i*97)%bw),py=((i*53)%fh),r=4+((i*13)%11);f.fillStyle=i%2?'#cbb892':'#7a6240';f.beginPath();f.ellipse(px,py,r*2,r,.4,0,7);f.fill()}f.restore();
     if(im){const pw=bw*.7/6.8,y0=(8.9-8.05)*bw/6.8*ky,h=4.1*bw/6.8*ky;f.save();f.beginPath();f.rect(X,0,bw,fh);f.clip();this._pilaster(f,X-pw/2,y0,pw,h,im);this._pilaster(f,X+bw-pw/2,y0,pw,h,im);f.restore()}}
   _marble(N=256){const [c,x]=cv(N,N);x.fillStyle='#d8d0c2';x.fillRect(0,0,N,N);seed=5;x.strokeStyle='rgba(100,92,80,.4)';
     for(let i=0;i<26;i++){x.lineWidth=.5+rnd()*1.5;x.beginPath();let a=rnd()*N,b=rnd()*N;x.moveTo(a,b);for(let k=0;k<6;k++){a+=(rnd()-.5)*N*.3;b+=(rnd()-.3)*N*.2;x.lineTo(a,b)}x.stroke()}return c}
-  _img(name,fn,err){const im=new Image();im.onload=()=>fn(im);im.onerror=()=>{console.warn('Sistine: could not load',name);if(err)err()};im.src=`assets/sistine/${name}.jpg?v=28`}
+  _img(name,fn,err){const im=new Image();im.onload=()=>fn(im);im.onerror=()=>{console.warn('Sistine: could not load',name);if(err)err()};im.src=`assets/sistine/${name}.jpg?v=29`}
   // ---------- side walls: drapery, fresco tier, popes & windows tier ----------
   _walls(){
     const px=150,bw=Math.round(6.8*px);
     const dt=this.photo('drape',6,1); // one real drapery bay (photo) per fresco bay
-    const fh=Math.round(4.4*px),[fc,f]=cv(bw,fh),ky=4.4/5.3;this._middle(f,0,bw,fh,null,ky,'#bba888');const ft=this.tex(fc,6,1);
+    const fh=Math.round(4.4*px),[fc,f]=cv(bw,fh),ky=4.4/5.3;this._middle(f,0,bw,fh,null,ky,'#9a7d55');const ft=this.tex(fc,6,1);
     const uh=Math.round((SPRING-m(8.9))/S*px),[uc,u]=cv(bw*2,uh);
     const drawU=(P)=>{this._upper(u,0,bw,uh,P.lunette1,0,P);this._upper(u,bw,bw,uh,P.lunette2,1,P)};drawU({});
     const ut=this.tex(uc,3,1);
-    this.imgs(['lunette1','lunette2','window','pope1','pope2','pope3','pilaster','entrance-tier','entrance-plaster','dado','arch-entrance','arch-altar'],P=>{drawU(P);ut.needsUpdate=true;this._middle(f,0,bw,fh,P.pilaster,ky,'#bba888');ft.needsUpdate=true;if(this.entU)this.entU(P);if(this.altU)this.altU(P)});
+    this.imgs(['lunette1','lunette2','window','pope1','pope2','pope3','pilaster','entrance-tier','entrance-plaster','dado','arch-entrance','arch-altar'],P=>{drawU(P);ut.needsUpdate=true;this._middle(f,0,bw,fh,P.pilaster,ky,'#9a7d55');ft.needsUpdate=true;if(this.entU)this.entU(P);if(this.altU)this.altU(P)});
     this.frescoMats=[];this.arts=[];
-    const wall=new THREE.MeshStandardMaterial({color:0xc4b8a0,roughness:.9});
+    const wall=new THREE.MeshStandardMaterial({color:0xcdb88e,roughness:.85});
     this.friezeMat=basic({map:this.photo('frieze',ROOM.L/(5.5*S),1)}); // real gilt/green palmette frieze under the frescoes
     const rail=this._railTex();
     for(const side of [-1,1]){
@@ -178,7 +178,7 @@ export class Sistine{
     const px=this.cap>=4096?150:96,EW=Math.round(13.4*px),EH=Math.round(20.7*px),[c,x]=cv(EW,EH),Y=h=>EH-h*px,X=w=>EW/2+w*px;
     const drawAll=(P={})=>{
       // sample the photo tier so the plain plaster band matches the surrounding photo-textured shades
-      let midCol='#9a7d55',topCol='#8a6e4a';
+      let midCol='#c4b49a',topCol='#b8a888';
       const im0=P['entrance-tier'];if(im0){const [sc,sx]=cv(1,1);sx.drawImage(im0,0,im0.height-8,im0.width,8,0,0,1,1);let d=sx.getImageData(0,0,1,1).data;midCol=`rgb(${d[0]},${d[1]},${d[2]})`;sx.drawImage(im0,0,0,im0.width,8,0,0,1,1);d=sx.getImageData(0,0,1,1).data;topCol=`rgb(${d[0]},${d[1]},${d[2]})`}
       x.fillStyle=midCol;x.fillRect(0,0,EW,EH);
       x.save();x.translate(0,Y(8.9));this._middle(x,0,EW,5.3*px,null,1,midCol); if(P['entrance-plaster']){const ph=5.3*px;x.globalAlpha=.92;x.drawImage(P['entrance-plaster'],0,0,EW,ph);x.globalAlpha=1} x.restore();
@@ -271,7 +271,7 @@ export class Sistine{
     add(new THREE.BoxGeometry(.3*S,.04*S,.16*S),gold,0,m(1.93),cz+D/2+.04*S); // suppedaneum under the feet
     add(new THREE.BoxGeometry(.32*S,.12*S,.02*S),gold,0,ty+.42*S,fz+.01); // titulus INRI
     // the corpus (bronze, full length, cut out on transparent background)
-    const ct=this.loader.load('assets/sistine/corpus.png?v=28');ct.colorSpace=THREE.SRGBColorSpace;ct.anisotropy=this.aniso;
+    const ct=this.loader.load('assets/sistine/corpus.png?v=29');ct.colorSpace=THREE.SRGBColorSpace;ct.anisotropy=this.aniso;
     const cw=1.5*S,ch=cw*984/819;
     // single corpus plane (FrontSide only — DoubleSide read as a ghost duplicate behind the cross)
     const corpus=add(new THREE.PlaneGeometry(cw,ch),new THREE.MeshBasicMaterial({map:ct,transparent:true,alphaTest:.45,toneMapped:false,color:0xd8d0c4,side:THREE.FrontSide,depthWrite:true}),0,m(3.72)-ch/2,fz+.02*S);
@@ -328,7 +328,7 @@ export class Sistine{
     const L=this.hdList||(this.hdList=[]),T=this.hdTex||(this.hdTex={}),i=L.indexOf(name);
     if(i>=0){L.splice(i,1);L.push(name);return}
     L.push(name);while(L.length>2)this._dropHD(L.shift());
-    this.loader.load(`assets/sistine/hd/${name}.jpg?v=${name==='judgement'||name.startsWith('ceiling')?28:28}`,t=>{const mat=this.mats&&this.mats[name];if(!L.includes(name)||!mat){t.dispose();return}
+    this.loader.load(`assets/sistine/hd/${name}.jpg?v=${name==='judgement'||name.startsWith('ceiling')?29:29}`,t=>{const mat=this.mats&&this.mats[name];if(!L.includes(name)||!mat){t.dispose();return}
       this.fit(t);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
       T[name]=t;mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true},undefined,e=>{console.warn('Sistine: hi-res failed, keeping low-res',name,e);const k=L.indexOf(name);if(k>=0)L.splice(k,1)})} // low-res stays on until hi-res succeeds
   _dropHD(name){const t=this.hdTex[name];if(!t)return;const mat=this.mats[name];if(mat&&mat.userData.base){mat.map=mat.userData.base;mat.needsUpdate=true}t.dispose();delete this.hdTex[name]}
