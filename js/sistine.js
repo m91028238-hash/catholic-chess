@@ -1,7 +1,7 @@
 // The Sistine Chapel built as real geometry around the board (real proportions: 40.9 x 13.4 x 20.7 m),
 // textured with public-domain fresco scans from Wikimedia Commons (see ASSETS.md / Image credits).
 import * as THREE from 'three';
-import { FLOOR } from './basilica.js?v=22';
+import { FLOOR } from './basilica.js?v=27';
 
 const S=2.6;                        // scene units per metre
 export const ROOM={W:13.4*S,L:40.9*S,H:20.7*S,y0:FLOOR};
@@ -13,6 +13,8 @@ const COVE_A=5*S,COVE_E=6*S;
 const coveT=z=>z<-HL+COVE_A?(z+HL)/COVE_A:z>HL-COVE_E?(HL-z)/COVE_E:1;
 export const ceilingAt=(x,z=0)=>{const y=VYC+Math.sqrt(Math.max(0,VR*VR-x*x)),t=Math.max(0,Math.min(1,coveT(z)));return SPRING+(y-SPRING)*Math.sin(t*Math.PI/2)};
 export const VAULT={R:VR,YC:VYC};
+const ENT_COL=[0,0,0,0,0,0,0,0,0,0,41.5,40.3,35.4,31.5,28.7,24.5,20.9,19.2,18.3,18.3,18.6,20.1,23.6,28.6,33.5,38.9,46.7,52.9,64.3,69.6,71.1,72.7,74.9,77.1,78.7,80.5,81.7,82.7,80.8,76.3,74.4,72.8,74.9,77.5,80.1,83,86.5,91.2,96,101.6,108.2,114.3,122.3,130,136.7,143.8,150.8,156.9,162.1,166.2,170.6,178,182.3,182.7,181.2];
+const ENT_ROW=[1124,1124,1124,1124,1122.2,1114,1104.2,1094.8,1079.8,1064.5,1045.9,1026.8,1010.2,993.1,975.5,956.1,937.1,917.7,897.7,877.2,856.6,835.1,814,793.2,771.3,749.4,728.3,705.5,683.1,657.6,632.1,607.1,582,556.4,531.1,505.6,480.8,455.1,432.5,408.5,383.1,358.3,335.1,313.5,290.9,269.4,248.4,229.1,210.1,191.1,174,156.6,140.7,125.4,111.6,97.8,84.8,72.9,61.7,51,41.9,34.6,26.9,17.7,8.8];
 const BAY=ROOM.L/6;
 // The 15th-century cycles, bay 1 = next to the altar (north wall = right when facing the altar)
 const NORTH=[['baptism',1280/809],['temptations',1536/951],['calling',1536/914],['sermon',1280/745],['keys',1536/951],['supper',1280/720]];
@@ -37,12 +39,12 @@ export class Sistine{
   }
   tex(c,rx=1,ry=1){const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.anisotropy=this.aniso;return t}
   photo(name,rx=1,ry=1,cb){ // real-photo wall texture (Commons crops, assets/sistine/): sRGB, mipmaps, max anisotropy, clamped to the GPU limit
-    const t=this.loader.load(`assets/sistine/${name}.jpg?v=22`,tt=>{this.fit(tt);tt.needsUpdate=true;if(cb)cb(tt)},undefined,e=>console.warn('Sistine: could not load',name,e));
+    const t=this.loader.load(`assets/sistine/${name}.jpg?v=27`,tt=>{this.fit(tt);tt.needsUpdate=true;if(cb)cb(tt)},undefined,e=>console.warn('Sistine: could not load',name,e));
     t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;return t}
   imgs(names,fn){const out={};let n=names.length;for(const k of names)this._img(k,im=>{out[k]=im;if(--n===0)fn(out)},()=>{if(--n===0)fn(out)})}
   fit(t){const im=t.image,c=this.cap;if(!im||!im.width||(im.width<=c&&im.height<=c))return t; // downscale oversized images
     const k=c/Math.max(im.width,im.height),[cc,x]=cv(Math.round(im.width*k),Math.round(im.height*k));x.drawImage(im,0,0,cc.width,cc.height);t.image=cc;t.needsUpdate=true;return t}
-  load(name,mat,retry=1){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=22`,t=>{
+  load(name,mat,retry=1){return new Promise(res=>this.loader.load(`assets/sistine/${name}.jpg?v=${name==='judgement'||name.startsWith('ceiling')?27:27}`,t=>{
     this.fit(t);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
     mat.userData.base=t;(this.mats||(this.mats={}))[name]=mat;if(!(this.hdTex&&this.hdTex[name]))mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true;res(t)},undefined,e=>{console.warn('Sistine: could not load',name,e);if(retry)setTimeout(()=>this.load(name,mat,0).then(res),1500);else res(null)}))}
   // ---------- floor: the chapel's Cosmatesque pavement (one panel = the chapel's width, repeated along the nave) ----------
@@ -120,21 +122,23 @@ export class Sistine{
     this._window(u,X+bw/2,uh*.3,bw*.3,uh*.62,P.window);
     const pw=bw*.15,ph=pw*740/430,pp=[P.pope1,P.pope2,P.pope3];this._niche(u,X+bw*.165,uh*.45,pw,ph,pp[(2*k)%3]);this._niche(u,X+bw*.835,uh*.45,pw,ph,pp[(2*k+1)%3]);
     u.fillStyle='#8c7550';u.fillRect(X,uh-8,bw,8)}
-  _middle(f,X,bw,fh,im,ky=1){ // fresco tier ground: warm plaster; real gilded pilasters between the frescoes (ky = px per m vertically / horizontally)
-    f.fillStyle='#b59c72';f.fillRect(X,0,bw,fh);
+  _middle(f,X,bw,fh,im,ky=1,col='#9a7d55'){ // fresco tier ground: warm plaster matched to photo surrounds; gilded pilasters between the frescoes
+    f.fillStyle=col;f.fillRect(X,0,bw,fh);
+    // subtle plaster variation so the band does not read as a flat untextured slab against photo tiers
+    f.save();f.globalAlpha=.14;for(let i=0;i<90;i++){const px=X+((i*97)%bw),py=((i*53)%fh),r=4+((i*13)%11);f.fillStyle=i%2?'#cbb892':'#7a6240';f.beginPath();f.ellipse(px,py,r*2,r,.4,0,7);f.fill()}f.restore();
     if(im){const pw=bw*.7/6.8,y0=(8.9-8.05)*bw/6.8*ky,h=4.1*bw/6.8*ky;f.save();f.beginPath();f.rect(X,0,bw,fh);f.clip();this._pilaster(f,X-pw/2,y0,pw,h,im);this._pilaster(f,X+bw-pw/2,y0,pw,h,im);f.restore()}}
   _marble(N=256){const [c,x]=cv(N,N);x.fillStyle='#ece5d6';x.fillRect(0,0,N,N);seed=5;x.strokeStyle='rgba(120,110,95,.35)';
     for(let i=0;i<26;i++){x.lineWidth=.5+rnd()*1.5;x.beginPath();let a=rnd()*N,b=rnd()*N;x.moveTo(a,b);for(let k=0;k<6;k++){a+=(rnd()-.5)*N*.3;b+=(rnd()-.3)*N*.2;x.lineTo(a,b)}x.stroke()}return c}
-  _img(name,fn,err){const im=new Image();im.onload=()=>fn(im);im.onerror=()=>{console.warn('Sistine: could not load',name);if(err)err()};im.src=`assets/sistine/${name}.jpg?v=22`}
+  _img(name,fn,err){const im=new Image();im.onload=()=>fn(im);im.onerror=()=>{console.warn('Sistine: could not load',name);if(err)err()};im.src=`assets/sistine/${name}.jpg?v=27`}
   // ---------- side walls: drapery, fresco tier, popes & windows tier ----------
   _walls(){
     const px=150,bw=Math.round(6.8*px);
     const dt=this.photo('drape',6,1); // one real drapery bay (photo) per fresco bay
-    const fh=Math.round(4.4*px),[fc,f]=cv(bw,fh),ky=4.4/5.3;this._middle(f,0,bw,fh,null,ky);const ft=this.tex(fc,6,1);
+    const fh=Math.round(4.4*px),[fc,f]=cv(bw,fh),ky=4.4/5.3;this._middle(f,0,bw,fh,null,ky,'#9a7d55');const ft=this.tex(fc,6,1);
     const uh=Math.round((SPRING-m(8.9))/S*px),[uc,u]=cv(bw*2,uh);
     const drawU=(P)=>{this._upper(u,0,bw,uh,P.lunette1,0,P);this._upper(u,bw,bw,uh,P.lunette2,1,P)};drawU({});
     const ut=this.tex(uc,3,1);
-    this.imgs(['lunette1','lunette2','window','pope1','pope2','pope3','pilaster','entrance-tier','dado','arch-entrance','arch-altar'],P=>{drawU(P);ut.needsUpdate=true;this._middle(f,0,bw,fh,P.pilaster,ky);ft.needsUpdate=true;if(this.entU)this.entU(P);if(this.altU)this.altU(P)});
+    this.imgs(['lunette1','lunette2','window','pope1','pope2','pope3','pilaster','entrance-tier','entrance-plaster','dado','arch-entrance','arch-altar'],P=>{drawU(P);ut.needsUpdate=true;this._middle(f,0,bw,fh,P.pilaster,ky,'#9a7d55');ft.needsUpdate=true;if(this.entU)this.entU(P);if(this.altU)this.altU(P)});
     this.frescoMats=[];this.arts=[];
     const wall=new THREE.MeshStandardMaterial({color:0xcdb88e,roughness:.85});
     this.friezeMat=basic({map:this.photo('frieze',ROOM.L/(5.5*S),1)}); // real gilt/green palmette frieze under the frescoes
@@ -172,15 +176,20 @@ export class Sistine{
     for(let i=0;i<p.count;i++)uv.setXY(i,(p.getX(i)+HW)/ROOM.W,(p.getY(i)-y0)/(top-y0));return g}
   _entrance(dt,wall,rail){ // entrance wall: real drapery, carved door in a marble surround, two frescoes, and the real photographed window tier (popes, painted windows, lunettes)
     const px=this.cap>=4096?150:96,EW=Math.round(13.4*px),EH=Math.round(20.7*px),[c,x]=cv(EW,EH),Y=h=>EH-h*px,X=w=>EW/2+w*px;
-    const drawAll=(P={})=>{x.fillStyle='#b9a07a';x.fillRect(0,0,EW,EH);
-      x.save();x.translate(0,Y(8.9));this._middle(x,0,EW,5.3*px);x.restore();
+    const drawAll=(P={})=>{
+      // sample the photo tier so the plain plaster band matches the surrounding photo-textured shades
+      let midCol='#9a7d55',topCol='#8a6e4a';
+      const im0=P['entrance-tier'];if(im0){const [sc,sx]=cv(1,1);sx.drawImage(im0,0,im0.height-8,im0.width,8,0,0,1,1);let d=sx.getImageData(0,0,1,1).data;midCol=`rgb(${d[0]},${d[1]},${d[2]})`;sx.drawImage(im0,0,0,im0.width,8,0,0,1,1);d=sx.getImageData(0,0,1,1).data;topCol=`rgb(${d[0]},${d[1]},${d[2]})`}
+      x.fillStyle=midCol;x.fillRect(0,0,EW,EH);
+      x.save();x.translate(0,Y(8.9));this._middle(x,0,EW,5.3*px,null,1,midCol); if(P['entrance-plaster']){const ph=5.3*px;x.globalAlpha=.92;x.drawImage(P['entrance-plaster'],0,0,EW,ph);x.globalAlpha=1} x.restore();
       if(P.pilaster){const pw=.6*px,ph=2.95*px;for(const w of [-6.6,-1.55,1.55,6.6])this._pilaster(x,X(w)-pw/2,Y(7.5),pw,ph,P.pilaster)}
       const im=P['entrance-tier'];if(im){const h=EW*im.height/im.width,top=Y(8.9)-h; // photo spans 8.9 m up to ~16.7 m, wall to wall
-        const [sc,sx]=cv(1,1);sx.drawImage(im,0,0,im.width,8,0,0,1,1);const d=sx.getImageData(0,0,1,1).data,col=`rgb(${d[0]},${d[1]},${d[2]})`;
-        x.fillStyle=col;x.fillRect(0,0,EW,top+2);x.drawImage(im,0,top,EW,h);
-        const za=P['arch-entrance'];if(za){const f=EW/2048,aw=EW,ah=1274*f,ay=top-980*f,[ac,ax]=cv(EW,Math.ceil(top+60*f)); // ceiling-composite entrance end (Zechariah, David & Goliath, Judith & Holofernes), registered to the tier photo (tier row 0 = crop row 980, col +64)
+        x.fillStyle=topCol;x.fillRect(0,0,EW,top+2);x.drawImage(im,0,top,EW,h);
+        // soft seam into the plaster band below the gallery so two shades do not meet as a hard cut
+        const g=x.createLinearGradient(0,top+h-.35*px,0,top+h+.55*px);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,midCol);x.fillStyle=g;x.fillRect(0,top+h-.35*px,EW,.9*px);
+        const za=P['arch-entrance'];if(za){const f=EW/2048,aw=EW,ah=1274*f,ay=top-980*f,[ac,ax]=cv(EW,Math.ceil(Math.max(1,top+60*f))); // Zechariah end registered to the tier photo
           ax.drawImage(za,-64*f,ay,aw,ah);ax.globalCompositeOperation='destination-in';const fg=ax.createLinearGradient(0,top+10*f,0,top+60*f);fg.addColorStop(0,'#000');fg.addColorStop(1,'rgba(0,0,0,0)');ax.fillStyle=fg;ax.fillRect(0,0,EW,ac.height);x.drawImage(ac,0,0)}
-        const g=x.createLinearGradient(0,top,0,top+.5*px);g.addColorStop(0,col);g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,top,EW,.5*px)}};
+        }};
     drawAll();
     const t=this.tex(c,1,1);t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;
     this.entU=P=>{drawAll(P);t.needsUpdate=true};
@@ -227,10 +236,14 @@ export class Sistine{
     for(let i=0;i<=n;i++){const a=-VA+2*VA*i/n,x=VR*Math.sin(a),ys=zs.map(z=>ceilingAt(x,z));
       const arc=(j0,j1)=>{const d=[0];for(let j=j0+1;j<=j1;j++)d.push(d[d.length-1]+Math.hypot(zs[j]-zs[j-1],ys[j]-ys[j-1]));return d};
       const dA=arc(0,k),dE=arc(k+1,2*k+1);
+      // entrance cove: at the wall it ends on the composite pixel showing the same point of SZ Romtour 25 as entrance-tier.jpg at the springing
+      // (the composite's entrance end is that photo, registered; table per vault column from /workspace/chapel-audit/entrance/11_build.py)
+      const uE=ENT_COL[i]/3129,vE=1-ENT_ROW[i]/1125;
       for(let j=0;j<cols;j++){let u;
         if(j<=k){const f=dA[j]/dA[k];u=uz(-HL)+(uz(-HL+COVE_A)-uz(-HL))*f}
-        else{const f=dE[j-k-1]/dE[k];u=uz(HL-COVE_E)+(uz(HL)-uz(HL-COVE_E))*f}
-        pos.push(x,ys[j],zs[j]);uv.push(u,.5+x/ROOM.W)}}
+        let v=.5+x/ROOM.W;
+        if(j>k){const f=dE[j-k-1]/dE[k];u=uz(HL-COVE_E)+(uE-uz(HL-COVE_E))*f;v+=(vE-v)*f}
+        pos.push(x,ys[j],zs[j]);uv.push(u,v)}}
     for(let i=0;i<n;i++)for(let j=0;j<cols-1;j++){const a=i*cols+j,b=a+cols;idx.push(a,b,a+1,a+1,b,b+1)}
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);
     this.ceilMat=basic({color:0xb8ab92,side:THREE.DoubleSide});
@@ -246,23 +259,22 @@ export class Sistine{
     const az=z+.75*S;add(new THREE.BoxGeometry(4.6*S,1*S,1.2*S),marble,0,m(1),az);
     add(new THREE.PlaneGeometry(4.2*S,.7*S),basic({color:0x7a2b24}),0,m(1),az+.6*S+.02);
     add(new THREE.BoxGeometry(4.7*S,.06*S,1.28*S),marble,0,m(1.53),az);
-    const top=m(1.56),cz=z+.32*S;
+    const top=m(1.56),cz=z+.18*S; // close to the wall so the mesh covers any residual photographed cross in the fresco
     // the cross: ebony with gilded edging, crossbar centre 3.61 m above the floor
     add(new THREE.BoxGeometry(.7*S,.16*S,.5*S),ebony,0,top+.08*S,cz);add(new THREE.BoxGeometry(.5*S,.14*S,.36*S),ebony,0,top+.23*S,cz);
     add(new THREE.BoxGeometry(.72*S,.02*S,.52*S),gold,0,top+.165*S,cz);
-    // sized/placed over the crucifix photographed in judgement.jpg (bar ~3.46-3.73 m, arms -0.80..+0.78 m, upright top ~4.0 m) so the 3D cross
-    // hides it; the bar is a little deeper and set slightly low because, seen from the floor, the 3D cross (in front of the wall) covers wall points above itself
-    const post=4.08-1.56,bar=1.68,ty=m(3.57),T=.2*S,TB=.34*S,D=.12*S;
+    const post=4.05-1.56,bar=1.59,ty=m(3.61),T=.2*S,TB=T,D=.22*S; // deeper in z to fully mask any residual fresco pixels
     add(new THREE.BoxGeometry(T,post*S,D),ebony,0,top+post*S/2,cz);add(new THREE.BoxGeometry(bar*S,TB,D),ebony,0,ty,cz);
     const fz=cz+D/2+.004,e=.022*S;
     for(const sx of [-1,1]){add(new THREE.BoxGeometry(e,post*S,.01),gold,sx*(T/2-e/2),top+post*S/2,fz);add(new THREE.BoxGeometry(bar*S,e,.01),gold,0,ty+sx*(TB/2-e/2),fz+.002)}
     add(new THREE.BoxGeometry(T*1.1,.05*S,D*1.1),gold,0,top+post*S,cz);for(const sx of [-1,1])add(new THREE.BoxGeometry(.05*S,TB*1.1,D*1.1),gold,sx*bar*S/2,ty,cz);
     add(new THREE.BoxGeometry(.3*S,.04*S,.16*S),gold,0,m(1.93),cz+D/2+.04*S); // suppedaneum under the feet
-    add(new THREE.BoxGeometry(.32*S,.12*S,.02*S),gold,0,ty+.36*S,fz+.01); // titulus INRI
+    add(new THREE.BoxGeometry(.32*S,.12*S,.02*S),gold,0,ty+.42*S,fz+.01); // titulus INRI
     // the corpus (bronze, full length, cut out on transparent background)
-    const ct=this.loader.load('assets/sistine/corpus.png?v=23');ct.colorSpace=THREE.SRGBColorSpace;ct.anisotropy=this.aniso;
+    const ct=this.loader.load('assets/sistine/corpus.png?v=27');ct.colorSpace=THREE.SRGBColorSpace;ct.anisotropy=this.aniso;
     const cw=1.5*S,ch=cw*984/819;
-    const corpus=add(new THREE.PlaneGeometry(cw,ch),new THREE.MeshBasicMaterial({map:ct,transparent:true,alphaTest:.4,toneMapped:false,color:0xd8d0c4,side:THREE.DoubleSide}),0,m(3.72)-ch/2,fz+.05*S);
+    // single corpus plane (FrontSide only — DoubleSide read as a ghost duplicate behind the cross)
+    const corpus=add(new THREE.PlaneGeometry(cw,ch),new THREE.MeshBasicMaterial({map:ct,transparent:true,alphaTest:.45,toneMapped:false,color:0xd8d0c4,side:THREE.FrontSide,depthWrite:true}),0,m(3.72)-ch/2,fz+.02*S);
     corpus.renderOrder=2;
     // six tall bronze candlesticks with white candles (tops ~3.1 m)
     const flame=basic({color:0xffd9a0}),wax=basic({color:0xf3eadb});
@@ -313,7 +325,7 @@ export class Sistine{
     const L=this.hdList||(this.hdList=[]),T=this.hdTex||(this.hdTex={}),i=L.indexOf(name);
     if(i>=0){L.splice(i,1);L.push(name);return}
     L.push(name);while(L.length>2)this._dropHD(L.shift());
-    this.loader.load(`assets/sistine/hd/${name}.jpg?v=22`,t=>{const mat=this.mats&&this.mats[name];if(!L.includes(name)||!mat){t.dispose();return}
+    this.loader.load(`assets/sistine/hd/${name}.jpg?v=${name==='judgement'||name.startsWith('ceiling')?27:27}`,t=>{const mat=this.mats&&this.mats[name];if(!L.includes(name)||!mat){t.dispose();return}
       this.fit(t);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=this.aniso;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
       T[name]=t;mat.map=t;mat.color.set(0xf2ede4);mat.needsUpdate=true},undefined,e=>{console.warn('Sistine: hi-res failed, keeping low-res',name,e);const k=L.indexOf(name);if(k>=0)L.splice(k,1)})} // low-res stays on until hi-res succeeds
   _dropHD(name){const t=this.hdTex[name];if(!t)return;const mat=this.mats[name];if(mat&&mat.userData.base){mat.map=mat.userData.base;mat.needsUpdate=true}t.dispose();delete this.hdTex[name]}

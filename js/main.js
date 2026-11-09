@@ -1,7 +1,7 @@
 import { Chess } from '../vendor/chess.js?v=2';
-import { ChessScene } from './scene.js?v=25';
-import * as AI from './ai.js?v=22';
-import { play, setSound, unlockAudio } from './sound.js?v=22';
+import { ChessScene } from './scene.js?v=27';
+import * as AI from './ai.js?v=27';
+import { play, setSound, unlockAudio } from './sound.js?v=27';
 
 const $=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
@@ -285,20 +285,23 @@ window.CC={_scene:scene,
 // Full screen: native Fullscreen API (webkit fallback) or, with no API (iOS), a CSS pseudo-fullscreen.
 // Either way body.full hides every bar and the 3D view fills 100vw x 100dvh; small corner overlays remain.
 {const de=document.documentElement,b=$('fsBtn'),fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement,
-    api=!!(de.requestFullscreen||de.webkitRequestFullscreen);let pseudo=false;
-  const st=$('stage'),x=document.createElement('button'),m=document.createElement('button'),pn=document.createElement('div');
+    isAndroid=/Android/i.test(navigator.userAgent),
+    api=!isAndroid&&!!(de.requestFullscreen||de.webkitRequestFullscreen);let pseudo=false;
+  const st=$('stage'),x=document.createElement('button'),m=document.createElement('button'),cam=document.createElement('button'),pn=document.createElement('div');
   x.id='fsX';x.className='fsov';x.textContent='✕';x.setAttribute('aria-label','Exit full screen');
   m.id='fsMenu';m.className='fsov';m.textContent='☰';m.setAttribute('aria-label','Controls');
+  cam.id='fsCam';cam.textContent='Cam';cam.setAttribute('aria-label','Cycle camera');
   pn.id='fsPanel';pn.hidden=true;
   const P=[['bUndo'],['bResign'],['bView'],['bSound']];
   pn.innerHTML='<div class="fsbtns">'+P.map(([id])=>`<button data-for="${id}"></button>`).join('')+'<button data-for="menuBtn">Menu</button></div><div class="fsart"></div>';
-  [x,m,pn].forEach(e=>st.appendChild(e));
+  [x,m,cam,pn].forEach(e=>st.appendChild(e));
   const art=()=>scene.artUI,home=art()&&art().parentNode,slot=pn.querySelector('.fsart');
   const sync=()=>pn.querySelectorAll('[data-for]').forEach(e=>{const o=$(e.dataset.for);if(e.dataset.for!=='menuBtn')e.textContent=o.textContent;e.disabled=o.disabled;e.hidden=o.hidden});
   const close=()=>{pn.hidden=true;m.classList.remove('on');document.body.classList.remove('fsopen');const a=art();if(a&&home&&a.parentNode!==home){home.appendChild(a);a.classList.toggle('shut',wasShut)}};
   let wasShut=false;const open=()=>{sync();const a=art();if(a){wasShut=a.classList.contains('shut');a.classList.remove('shut');slot.appendChild(a)}pn.hidden=false;m.classList.add('on');document.body.classList.add('fsopen')};
   m.onclick=e=>{e.stopPropagation();pn.hidden?open():close()};
-  [pn,x,m].forEach(e=>e.addEventListener('pointerdown',ev=>ev.stopPropagation()));
+  [pn,x,m,cam].forEach(e=>e.addEventListener('pointerdown',ev=>ev.stopPropagation()));
+  cam.onclick=e=>{e.stopPropagation();$('bView').click();cam.title=$('bView').textContent;};
   pn.addEventListener('click',e=>{e.stopPropagation();const t=e.target.closest('button');if(!t)return;
     if(t.dataset.for){$(t.dataset.for).click();if(t.dataset.for==='bSound')sync();else close()}
     else if(t.closest('.artui')&&t.dataset.k!=='tog')close()});
@@ -309,7 +312,7 @@ window.CC={_scene:scene,
   const enterPseudo=()=>{pseudo=true;try{history.pushState({pfs:1},'')}catch(_){}upd()};
   const exitPseudo=(fromPop)=>{if(!pseudo)return;pseudo=false;if(!fromPop&&history.state&&history.state.pfs)try{history.back()}catch(_){}upd()};
   const exit=()=>{if(fsEl()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);try{screen.orientation.unlock()}catch(_){}}else exitPseudo()};
-  const enter=()=>{if(!api)return enterPseudo();
+  const enter=()=>{if(!api){enterPseudo();try{scrollTo(0,1)}catch(_){}return}
     try{const r=(de.requestFullscreen||de.webkitRequestFullscreen).call(de,{navigationUI:'hide'});if(r&&r.then)r.then(lock).catch(enterPseudo)}catch(_){enterPseudo()}};
   b.onclick=()=>isFull()?exit():enter();
   x.onclick=e=>{e.stopPropagation();exit()};

@@ -1,10 +1,10 @@
 // three.js scene: board, pieces, lights, camera, picking and animation.
 import * as THREE from 'three';
 import { OrbitControls, RoomEnvironment } from 'three';
-import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=22';
-import { pieceGeometries } from './pieces.js?v=22';
-import { buildPlinth } from './basilica.js?v=22';
-import { Sistine, ROOM, ceilingAt } from './sistine.js?v=25';
+import { BOARD, buildBoardTextures, woodCanvas, canvasTex, loadImage } from './textures.js?v=27';
+import { pieceGeometries } from './pieces.js?v=27';
+import { buildPlinth } from './basilica.js?v=27';
+import { Sistine, ROOM, ceilingAt } from './sistine.js?v=27';
 const CHAIR_Z=7.0; // chair centres, each side of the table (2.6 units per metre)
 
 const TOP=0.32;
@@ -77,7 +77,7 @@ export class ChessScene{
     const sh=this.seatUI=document.createElement('div');sh.className='seathint';sh.hidden=true;sh.innerHTML='<span>Walk to your chair to sit and play</span><button type="button">Skip, sit now</button>';
     sh.querySelector('button').addEventListener('click',e=>{e.stopPropagation();this.sitDown()});this.host.appendChild(sh);
     const j=this.joyUI=document.createElement('div');j.className='joy';j.hidden=true;j.innerHTML='<div class="knob"></div>';this.host.appendChild(j);
-    const J=this.joy={x:0,y:0,id:null},R=44,knob=j.firstChild;
+    const J=this.joy={x:0,y:0,id:null},R=70,knob=j.firstChild;
     const setK=(dx,dy)=>{const l=Math.hypot(dx,dy),s=l>R?R/l:1;dx*=s;dy*=s;knob.style.transform=`translate(${dx}px,${dy}px)`;
       let x=dx/R,y=dy/R;const m=Math.hypot(x,y);if(m<.15){x=y=0}else{const k=(m-.15)/.85/m;x*=k;y*=k}J.x=x;J.y=y};
     // geometry is re-read on every press (the stage resizes on fullscreen / rotation), and reset on resize so a stale press can't keep walking
@@ -185,7 +185,7 @@ export class ChessScene{
       pts.push(new THREE.Vector3(lx,0,A.z),new THREE.Vector3(lx,0,b.z))}
     pts.push(b.clone());return pts}
   walkToArt(id){const w=this.walk;if(!w)return;const o=this.room.artworks().find(a=>a.id===id);if(!o)return;
-    const S=2.6,EYE=ROOM.y0+1.68*S,up=o.pitch>1;let p;
+    const S=2.6,EYE=ROOM.y0+1.65*S,up=o.pitch>1;let p;
     if(up)p=new THREE.Vector3(o.c.x,0,o.id==='ceiling'?-20:o.c.z);
     else if(o.n.z)p=new THREE.Vector3(o.c.x,0,o.c.z+o.n.z*(o.id==='christ'?5.6:13.5)*S);
     else p=new THREE.Vector3(o.c.x+o.n.x*11*S,0,o.c.z); // across the nave: the high panels are seen almost straight on
@@ -208,15 +208,15 @@ export class ChessScene{
     let ix=this.joy.x+(has('KeyD','ArrowRight')?1:0)-(has('KeyA','ArrowLeft')?1:0),iz=this.joy.y+(has('KeyS','ArrowDown')?1:0)-(has('KeyW','ArrowUp')?1:0);
     const il=Math.hypot(ix,iz);if(il>1){ix/=il;iz/=il}
     if(il>.01)w.glide=null;
-    if(!w.glide){const sp=2.4*S*(has('ShiftLeft','ShiftRight')?2.2:1),sy=Math.sin(w.yaw),cy=Math.cos(w.yaw);
+    if(!w.glide){const sp=4.6*S*(has('ShiftLeft','ShiftRight')?2.2:1),sy=Math.sin(w.yaw),cy=Math.cos(w.yaw);
       const tx=(cy*ix+sy*iz)*sp,tz=(-sy*ix+cy*iz)*sp,k=1-Math.exp(-dt*9);
       w.vel.x+=(tx-w.vel.x)*k;w.vel.z+=(tz-w.vel.z)*k;w.pos.addScaledVector(w.vel,dt);this._collide(w.pos)}
     // smoothed look
     const lk=1-Math.exp(-dt*20);w.yaw+=(w.yawT-w.yaw)*lk;w.pitch+=(w.pitchT-w.pitch)*lk;
     w.fov+=(w.fovTo-w.fov)*(1-Math.exp(-dt*12));if(Math.abs(w.fovTo-w.fov)<.01)w.fov=w.fovTo;
     // gait: subtle head-bob and leg swing
-    const spd=Math.hypot(w.vel.x,w.vel.z),amt=Math.min(1,spd/(2.4*S));w.phase+=dt*spd*2.2;
-    c.position.set(w.pos.x,ROOM.y0+1.68*S+Math.sin(w.phase*2)*.018*S*amt,w.pos.z);c.rotation.set(w.pitch,w.yaw,0,'YXZ');
+    const spd=Math.hypot(w.vel.x,w.vel.z),amt=Math.min(1,spd/(4.6*S));w.phase+=dt*spd*1.15;
+    c.position.set(w.pos.x,ROOM.y0+1.65*S+Math.sin(w.phase*2)*.018*S*amt,w.pos.z);c.rotation.set(w.pitch,w.yaw,0,'YXZ');
     if(c.fov!==w.fov){c.fov=w.fov;c.updateProjectionMatrix()}
     const b=this.body;b.position.set(w.pos.x,ROOM.y0,w.pos.z);b.rotation.y=w.yaw;
     this.legs[0].rotation.x=Math.sin(w.phase)*.45*amt;this.legs[1].rotation.x=-Math.sin(w.phase)*.45*amt;

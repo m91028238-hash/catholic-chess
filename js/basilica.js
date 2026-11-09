@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { canvasTex } from './textures.js?v=22';
 
-export const FLOOR=-2.05; // table top (y=0) 0.79 m above the chapel floor (2.6 units per metre)
+export const FLOOR=-1.89; // table top (y=0) ~0.73 m; board surface (TOP=0.32) ~0.85 m above the chapel floor (2.6 units per metre)
 const cv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return [c,c.getContext('2d')]};
 let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
 function veins(g,w,h,col,n){g.strokeStyle=col;for(let i=0;i<n;i++){g.lineWidth=.5+rnd()*1.5;g.beginPath();let x=rnd()*w,y=rnd()*h;g.moveTo(x,y);for(let k=0;k<8;k++){x+=(rnd()-.4)*w*.15;y+=(rnd()-.5)*h*.12;g.lineTo(x,y)}g.stroke()}}

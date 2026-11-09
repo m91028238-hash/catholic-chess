@@ -6,8 +6,10 @@
 
 - Sistine Chapel art (assets/sistine/; larger copies of the Last Judgement and six wall frescoes in assets/sistine/hd/, loaded only near that artwork), via Wikimedia Commons, resized/recompressed:
   - The Sistine Chapel ceiling — Michelangelo, 1508–12. Fresco public domain; composite photo CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:CAPPELLA_SISTINA_Ceiling.jpg
-  - End-wall vault arches (arch-altar.jpg: Jonah with the Brazen Serpent and Punishment of Haman pendentives; arch-entrance.jpg: Zechariah with the David and Goliath and Judith and Holofernes pendentives) — end crops of the same CC BY-SA 3.0 ceiling composite, rotated to stand upright on the end walls (adapted; same licence).
+    In ceiling-3129.jpg / ceiling-2048.jpg the entrance end (Zechariah, the David and Goliath and Judith and Holofernes pendentives, up to the frame moulding before the first bay; composite columns 0–312 of 3129) is replaced by the same area of "SZ Romtour Sixtinische Kapelle 25.jpg" (CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:SZ_Romtour_Sixtinische_Kapelle_25.jpg), registered into the composite's layout by feature matching and optical flow, so the vault and the entrance-wall tier come from one photograph. Its colour is blended gradually toward the composite over columns 170–300 and the two are cross-faded over columns 288–312 along the moulding. Adapted; CC BY-SA.
+  - End-wall vault arch (arch-altar.jpg: Jonah with the Brazen Serpent and Punishment of Haman pendentives) — end crop of the same CC BY-SA 3.0 ceiling composite, rotated to stand upright on the altar wall (adapted; same licence).
   - The Last Judgement — Michelangelo, 1536–41. Public domain. https://commons.wikimedia.org/wiki/File:Last_Judgement_(Michelangelo).jpg
+    The altar crucifix and six candlesticks photographed in front of the fresco were replaced, in the lower centre only, with registered pixels (colour-matched locally to the surrounding fresco) from a second reproduction without them: "Michelangelo JGericht4.jpg" (uploaded to de.wikipedia by Hans Bug, 2006; original photographer not stated), PD-Art / PD-old, https://commons.wikimedia.org/wiki/File:Michelangelo_JGericht4.jpg. That area is softer (source 1841 px wide); no painting or generated fill was added. A few pixels in the bottom ~1 cm at the edges of that area are unchanged.
   - The Baptism of Christ — Pietro Perugino, 1482. Public domain. https://commons.wikimedia.org/wiki/File:Pietro_Perugino_-_Baptism_of_Christ_-_Sistine_Chapel_-_cat13a.jpg
   - The Temptations of Christ — Sandro Botticelli, 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:05_Tentaciones_de_Cristo_(Botticelli).jpg
   - The Calling of the First Apostles — Domenico Ghirlandaio, 1481–82. Public domain. https://commons.wikimedia.org/wiki/File:Domenico_Ghirlandaio_-_Llamada_a_los_primeros_ap%C3%B3stoles_(Capilla_Sixtina,_Roma,_1481-82).jpg
@@ -34,3 +36,11 @@
 - Entrance door, railing, screen grille, organ, frames and window reveals — procedural canvases made for this game.
 
   - Altar crucifix corpus (corpus.png): bronze crucifix corpus for the altar cross. An AI-generated image made for this project (no third-party photo used as a texture), cut out to a transparent background and shown as a flat alpha-cut plane. It is an interpretation of the bronze altar crucifix seen in the chapel, not a scan of the historical object or a 3D sculpture. Licence: project-generated; no third-party rights claimed.
+
+
+## v27 visual corrections (Nov 2026)
+- Last Judgement low/hi-res: photographed altar crucifix/candlesticks removed via genuine-pixel repair from Wikimedia Commons Michelangelo_JGericht4.jpg (see chapel handoff); 3D ebony/gold cross + single FrontSide corpus remain.
+- Entrance middle plaster band colour-matched to entrance-tier photo edges (no flat mismatched beige slab); Zechariah arch-entrance restored on the end wall.
+- Walk: board surface ~0.85 m, eye 1.65 m, speed ~1.9×, larger joystick; Android uses CSS pseudo-fullscreen (no requestFullscreen toast); fullscreen Camera button.
+
+- `entrance-plaster.jpg`: warm plaster band for the entrance wall between the gallery and the lower frescoes/drapery, colour-matched from the entrance-tier photo bottom edge (generated; not a Vatican-tour crop).
