@@ -53,7 +53,7 @@ export class Sistine{
   _floorCanvas(N,rough){
     const [c,x]=cv(N,N),u=N/13.4,R=()=>rnd();seed=11;
     const G=rough?{white:'#5a5a5a',grey:'#6a6a6a',dark:'#727272',red:'#4c4c4c',green:'#505050',grout:'#c0c0c0'}
-      :{white:'#d4cbb8',grey:'#8e8778',dark:'#3a3530',red:'#7a3a32',green:'#3d5246',grout:'#6e675c'};
+      :{white:'#d8cfbc',grey:'#948c7c',dark:'#454038',red:'#7a3a32',green:'#42584c',grout:'#746c60'};
     const ln=Math.max(1,N/1600);
     const marble=(col,veinA)=>{x.fillStyle=col;x.fillRect(0,0,N,N);if(rough)return;x.globalAlpha=veinA;x.strokeStyle='#8a8070';
       for(let i=0;i<120;i++){x.lineWidth=.4+R()*1.1*N/2048;x.beginPath();let a=R()*N,b=R()*N;x.moveTo(a,b);for(let k=0;k<5;k++){a+=(R()-.5)*N*.07;b+=(R()-.5)*N*.07;x.lineTo(a,b)}x.stroke()}x.globalAlpha=1};
@@ -122,7 +122,7 @@ export class Sistine{
     this._window(u,X+bw/2,uh*.3,bw*.3,uh*.62,P.window);
     const pw=bw*.15,ph=pw*740/430,pp=[P.pope1,P.pope2,P.pope3];this._niche(u,X+bw*.165,uh*.45,pw,ph,pp[(2*k)%3]);this._niche(u,X+bw*.835,uh*.45,pw,ph,pp[(2*k+1)%3]);
     u.fillStyle='#7a6e58';u.fillRect(X,uh-8,bw,8)}
-  _middle(f,X,bw,fh,im,ky=1,col='#b5a686'){ // fresco tier ground: warm plaster matched to photo surrounds; gilded pilasters between the frescoes
+  _middle(f,X,bw,fh,im,ky=1,col='#bba888'){ // fresco tier ground: warm plaster matched to photo surrounds; gilded pilasters between the frescoes
     f.fillStyle=col;f.fillRect(X,0,bw,fh);
     // subtle plaster variation so the band does not read as a flat untextured slab against photo tiers
     f.save();f.globalAlpha=.14;for(let i=0;i<90;i++){const px=X+((i*97)%bw),py=((i*53)%fh),r=4+((i*13)%11);f.fillStyle=i%2?'#cbb892':'#7a6240';f.beginPath();f.ellipse(px,py,r*2,r,.4,0,7);f.fill()}f.restore();
@@ -134,13 +134,13 @@ export class Sistine{
   _walls(){
     const px=150,bw=Math.round(6.8*px);
     const dt=this.photo('drape',6,1); // one real drapery bay (photo) per fresco bay
-    const fh=Math.round(4.4*px),[fc,f]=cv(bw,fh),ky=4.4/5.3;this._middle(f,0,bw,fh,null,ky,'#b5a686');const ft=this.tex(fc,6,1);
+    const fh=Math.round(4.4*px),[fc,f]=cv(bw,fh),ky=4.4/5.3;this._middle(f,0,bw,fh,null,ky,'#bba888');const ft=this.tex(fc,6,1);
     const uh=Math.round((SPRING-m(8.9))/S*px),[uc,u]=cv(bw*2,uh);
     const drawU=(P)=>{this._upper(u,0,bw,uh,P.lunette1,0,P);this._upper(u,bw,bw,uh,P.lunette2,1,P)};drawU({});
     const ut=this.tex(uc,3,1);
-    this.imgs(['lunette1','lunette2','window','pope1','pope2','pope3','pilaster','entrance-tier','entrance-plaster','dado','arch-entrance','arch-altar'],P=>{drawU(P);ut.needsUpdate=true;this._middle(f,0,bw,fh,P.pilaster,ky,'#b5a686');ft.needsUpdate=true;if(this.entU)this.entU(P);if(this.altU)this.altU(P)});
+    this.imgs(['lunette1','lunette2','window','pope1','pope2','pope3','pilaster','entrance-tier','entrance-plaster','dado','arch-entrance','arch-altar'],P=>{drawU(P);ut.needsUpdate=true;this._middle(f,0,bw,fh,P.pilaster,ky,'#bba888');ft.needsUpdate=true;if(this.entU)this.entU(P);if(this.altU)this.altU(P)});
     this.frescoMats=[];this.arts=[];
-    const wall=new THREE.MeshStandardMaterial({color:0xb8ad96,roughness:.9});
+    const wall=new THREE.MeshStandardMaterial({color:0xc4b8a0,roughness:.9});
     this.friezeMat=basic({map:this.photo('frieze',ROOM.L/(5.5*S),1)}); // real gilt/green palmette frieze under the frescoes
     const rail=this._railTex();
     for(const side of [-1,1]){
